@@ -1,0 +1,174 @@
+---
+title: Ranking endpoints
+description: Access global and country player rankings, including medal rankings
+---
+
+## Get Player Ranking
+
+Retrieve paginated player rankings with optional country and search filters.
+
+```http
+GET /ranking/:page
+```
+
+<ParamField path="page" type="number" required>
+  Page number for pagination (1-indexed)
+</ParamField>
+
+<ParamField query="country" type="string">
+  Filter by country code (e.g., "US", "GB", "JP")
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search for players by name
+</ParamField>
+
+### Response
+
+<ResponseField name="players" type="array">
+  Array of ranked players with their statistics
+  
+  <Expandable title="Player object">
+    <ResponseField name="id" type="string">
+      ScoreSaber player ID
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Player name
+    </ResponseField>
+    
+    <ResponseField name="rank" type="number">
+      Global rank
+    </ResponseField>
+    
+    <ResponseField name="countryRank" type="number">
+      Country-specific rank
+    </ResponseField>
+    
+    <ResponseField name="pp" type="number">
+      Performance points
+    </ResponseField>
+    
+    <ResponseField name="country" type="string">
+      Country code
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total" type="number">
+  Total number of players matching the query
+</ResponseField>
+
+<ResponseField name="page" type="number">
+  Current page number
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://ssr-api.fascinated.cc/ranking/1?country=US"
+```
+
+### Example Response
+
+```json
+{
+  "players": [
+    {
+      "id": "76561198059961776",
+      "name": "BaconEggs",
+      "rank": 1,
+      "countryRank": 1,
+      "pp": 15234.56,
+      "country": "US"
+    }
+  ],
+  "total": 12500,
+  "page": 1
+}
+```
+
+## Get Medal Ranking
+
+Retrieve paginated medal rankings with optional country filter.
+
+```http
+GET /ranking/medals/:page
+```
+
+<ParamField path="page" type="number" required>
+  Page number for pagination (1-indexed)
+</ParamField>
+
+<ParamField query="country" type="string">
+  Filter by country code (e.g., "US", "GB", "JP")
+</ParamField>
+
+### Response
+
+<ResponseField name="players" type="array">
+  Array of players ranked by medal count
+  
+  <Expandable title="Player object">
+    <ResponseField name="id" type="string">
+      ScoreSaber player ID
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Player name
+    </ResponseField>
+    
+    <ResponseField name="rank" type="number">
+      Medal ranking position
+    </ResponseField>
+    
+    <ResponseField name="countryRank" type="number">
+      Country-specific medal rank
+    </ResponseField>
+    
+    <ResponseField name="medals" type="number">
+      Total medal count
+    </ResponseField>
+    
+    <ResponseField name="country" type="string">
+      Country code
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total" type="number">
+  Total number of players in the medal ranking
+</ResponseField>
+
+<ResponseField name="page" type="number">
+  Current page number
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://ssr-api.fascinated.cc/ranking/medals/1?country=GB"
+```
+
+### Example Response
+
+```json
+{
+  "players": [
+    {
+      "id": "76561198059961776",
+      "name": "TopPlayer",
+      "rank": 1,
+      "countryRank": 1,
+      "medals": 1250,
+      "country": "GB"
+    }
+  ],
+  "total": 8500,
+  "page": 1
+}
+```
+
+<Note>
+Medal rankings are calculated based on top 10 leaderboard positions. See the [Medals](/features/medals) feature documentation for how medals are earned.
+</Note>

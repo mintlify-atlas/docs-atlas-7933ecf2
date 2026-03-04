@@ -70,6 +70,7 @@
             "group": "Endpoints",
             "pages": [
               "api/player",
+              "api/ranking",
               "api/scores",
               "api/leaderboards",
               "api/playlists",
