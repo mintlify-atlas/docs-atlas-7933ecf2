@@ -1,0 +1,94 @@
+{
+  "projectType": "saas",
+  "projectName": "ScoreSaber Reloaded",
+  "projectDescription": "A modern web application to view your Beat Saber scores and get detailed stats about your plays.",
+  "theme": "aspen",
+  "primaryColor": "#f3d520",
+  "lightColor": "#7c640c",
+  "darkColor": "#221b1c",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Overview",
+            "pages": ["introduction", "quickstart"]
+          },
+          {
+            "group": "Core Features",
+            "pages": [
+              "features/player-profiles",
+              "features/score-tracking",
+              "features/leaderboards",
+              "features/statistics",
+              "features/medals",
+              "features/playlists"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/scoresaber",
+              "integrations/beatleader",
+              "integrations/beatsaver",
+              "integrations/discord"
+            ]
+          },
+          {
+            "group": "Architecture",
+            "pages": [
+              "architecture/overview",
+              "architecture/frontend",
+              "architecture/backend",
+              "architecture/database"
+            ]
+          }
+        ]
+      },
+      {
+        "tab": "API Reference",
+        "groups": [
+          {
+            "group": "Getting Started",
+            "pages": ["api/overview", "api/authentication"]
+          },
+          {
+            "group": "Endpoints",
+            "pages": [
+              "api/player",
+              "api/scores",
+              "api/leaderboards",
+              "api/playlists",
+              "api/beatleader",
+              "api/beatsaver"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Player profile tracking and statistics",
+    "Score history and performance charts",
+    "Global and country leaderboards",
+    "Medal system for achievements",
+    "Playlist management",
+    "BeatLeader and BeatSaver integration",
+    "Discord bot for notifications",
+    "Real-time score updates via WebSocket"
+  ],
+  "publicApiSurface": [
+    "GET /player/:playerId",
+    "GET /player/scores/:playerId",
+    "GET /player/search",
+    "GET /scores/:scoreId",
+    "GET /leaderboard/:leaderboardId",
+    "GET /leaderboard/difficulties",
+    "GET /ranking/global",
+    "GET /ranking/country/:country",
+    "GET /playlist/:playlistId",
+    "GET /beatleader/player/:playerId",
+    "GET /beatsaver/map/:hash"
+  ]
+}
