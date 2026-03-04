@@ -1,0 +1,398 @@
+---
+title: Statistics
+description: Platform-wide statistics, player metrics, and game analytics for Beat Saber on ScoreSaber Reloaded.
+---
+
+## Overview
+
+ScoreSaber Reloaded provides comprehensive statistics for the entire Beat Saber ecosystem. Track platform-wide metrics, player activity, HMD usage, and score submission trends with interactive charts and real-time updates.
+
+<CardGroup cols={2}>
+  <Card title="Platform Statistics" icon="chart-line">
+    Track overall ScoreSaber activity with daily player counts and score submissions
+  </Card>
+  <Card title="HMD Analytics" icon="vr-cardboard">
+    See which VR headsets are most popular in the community
+  </Card>
+  <Card title="App Metrics" icon="gauge">
+    Monitor ScoreSaber Reloaded usage and performance statistics
+  </Card>
+  <Card title="Historical Trends" icon="clock">
+    Analyze player activity and score patterns over time
+  </Card>
+</CardGroup>
+
+## Accessing Statistics
+
+Navigate to `/statistics` to view the comprehensive statistics dashboard.
+
+## Platform Statistics
+
+ScoreSaber-wide metrics provide insight into the game's health and activity:
+
+### Daily Active Players
+
+Track player engagement:
+
+- **Total Active Players** - Unique players who set scores today
+- **Daily Trend** - Growth or decline compared to previous day
+- **Weekly Average** - 7-day rolling average
+- **Peak Activity** - Highest daily player count in the dataset
+
+<Tip>
+  Player activity typically peaks on weekends and during major tournaments or map releases.
+</Tip>
+
+### Score Submissions
+
+Monitor score activity across the platform:
+
+- **Total Scores Today** - Scores submitted in the last 24 hours
+- **Ranked vs Unranked** - Breakdown of score types
+- **Daily Submission Rate** - Average scores per active player
+- **Historical Trends** - Score submission patterns over time
+
+### Ranked Play Statistics
+
+<Accordion title="Key Ranked Metrics">
+  - **Total Ranked Scores** - All-time ranked score count
+  - **Average PP Per Play** - Mean PP earned per ranked score
+  - **Top PP Today** - Highest PP score set in the last 24 hours
+  - **Total PP Pool** - Sum of all PP across all players
+  - **New Ranked Maps** - Maps ranked in the last 30 days
+</Accordion>
+
+## HMD Usage Statistics
+
+Understand which VR headsets the community uses:
+
+### HMD Distribution Chart
+
+Interactive chart showing:
+
+- Percentage of players using each headset
+- Total player count per HMD
+- Trend changes over time
+- Emerging headsets gaining popularity
+
+### Popular Headsets
+
+Currently tracked HMDs include:
+
+<CardGroup cols={3}>
+  <Card title="Meta Quest 2" icon="vr-cardboard">
+    Typically 30-40% of the player base
+  </Card>
+  <Card title="Meta Quest 3" icon="vr-cardboard">
+    Growing market share, 15-25%
+  </Card>
+  <Card title="Valve Index" icon="vr-cardboard">
+    PC VR favorite, 10-20%
+  </Card>
+  <Card title="Rift/Rift S" icon="vr-cardboard">
+    Legacy Oculus headsets, declining share
+  </Card>
+  <Card title="Vive/Vive Pro" icon="vr-cardboard">
+    HTC devices, 5-10%
+  </Card>
+  <Card title="PlayStation VR2" icon="vr-cardboard">
+    Console players, limited ScoreSaber support
+  </Card>
+</CardGroup>
+
+<Note>
+  HMD data is self-reported through mods and may not be 100% accurate. "Unknown" category includes players without HMD tracking enabled.
+</Note>
+
+## ScoreSaber Reloaded App Statistics
+
+Metrics specific to the SSR platform:
+
+### Usage Statistics
+
+<Accordion title="App Metrics">
+  - **Total Users** - Unique visitors to ScoreSaber Reloaded
+  - **Daily Active Users** - Users who accessed SSR in the last 24 hours
+  - **API Requests** - Total API calls per day
+  - **Average Response Time** - API performance metrics
+  - **Cached Requests** - Percentage served from cache
+  - **Cache Hit Rate** - Effectiveness of caching layer
+</Accordion>
+
+### Performance Metrics
+
+Real-time monitoring:
+
+- **Uptime** - Platform availability percentage (target: 99.9%)
+- **Average Load Time** - Page load performance
+- **Database Queries** - Query count and performance
+- **WebSocket Connections** - Active live feed connections
+
+<Tip>
+  The statistics page links to a public Grafana dashboard with detailed real-time metrics. Click "View more in Grafana" for deeper insights.
+</Tip>
+
+## Interactive Charts
+
+All statistics include interactive visualizations:
+
+### ScoreSaber Statistics Chart
+
+Multi-line chart showing:
+
+- **Daily Scores** - Total scores submitted per day
+- **Daily Players** - Active players per day
+- **Ranked Scores** - Subset of ranked score submissions
+- **New Players** - First-time players joining
+
+**Features:**
+- Hover tooltips with exact values
+- Zoom into specific date ranges
+- Toggle individual data series
+- Export chart as image
+
+### HMD Usage Chart
+
+Dynamic pie/donut chart:
+
+- Color-coded by headset manufacturer
+- Percentage labels
+- Interactive legend (click to toggle)
+- Responsive design for mobile
+
+<Note>
+  Charts update automatically when new data is available. Refresh the page to see the latest statistics.
+</Note>
+
+## Historical Data
+
+Access historical statistics for trend analysis:
+
+### Time Ranges
+
+- **Last 7 Days** - Recent activity snapshot
+- **Last 30 Days** - Monthly trends
+- **Last 90 Days** - Quarterly overview
+- **Last Year** - Annual trends and seasonality
+- **All Time** - Complete historical data
+
+### Export Options
+
+Download statistics data:
+
+- **CSV Export** - Raw data for spreadsheet analysis
+- **JSON Export** - Structured data for programmatic use
+- **Chart Images** - PNG export of visualizations
+
+## Regional Statistics
+
+Break down statistics by geographic region:
+
+### Country Rankings
+
+See which countries have the most:
+
+- Active players
+- Total PP
+- Ranked scores
+- Top-ranked players
+
+### Regional Activity
+
+Track activity by region:
+
+- **North America** - US, Canada, Mexico
+- **Europe** - UK, Germany, France, etc.
+- **Asia** - Japan, South Korea, China
+- **Oceania** - Australia, New Zealand
+- **Other** - South America, Africa, Middle East
+
+<Accordion title="Time Zone Considerations">
+  All timestamps are displayed in UTC. Regional activity patterns show:
+  - Peak hours by timezone
+  - Weekend vs weekday differences
+  - Holiday and event impacts
+  - Seasonal variations by hemisphere
+</Accordion>
+
+## Leaderboard Statistics
+
+Aggregate statistics about maps and leaderboards:
+
+### Map Statistics
+
+- **Total Leaderboards** - All ranked and unranked maps
+- **Ranked Leaderboards** - Maps eligible for PP
+- **Qualified Maps** - Maps pending rank approval
+- **Average Star Rating** - Mean difficulty of ranked maps
+- **Most Played Map** - All-time most popular map
+- **Trending Maps** - Current hot maps by play count
+
+### Difficulty Distribution
+
+Breakdown of ranked maps by star rating:
+
+- 0-2 stars: Easy maps
+- 2-4 stars: Intermediate
+- 4-6 stars: Advanced
+- 6-8 stars: Expert
+- 8-10 stars: Master
+- 10-12 stars: Extreme
+- 12+ stars: Ultra challenging
+
+<Tip>
+  Most players focus on 3-7 star maps where PP rewards are balanced with achievable difficulty.
+</Tip>
+
+## Score Distribution Analysis
+
+Understand how scores are distributed:
+
+### Accuracy Distribution
+
+Histogram showing:
+
+- Frequency of scores by accuracy percentage
+- Peak accuracy ranges (most common)
+- Distribution skew (right-skewed toward high accuracy)
+- Outliers and interesting patterns
+
+### PP Distribution
+
+Analyze PP earnings:
+
+- **Median PP** - Middle value of all ranked scores
+- **Mean PP** - Average PP per ranked score
+- **Top 1% Threshold** - PP required to reach top percentile
+- **Distribution Curve** - Visualization of PP spread
+
+## Player Statistics
+
+Aggregate player metrics:
+
+### Player Base
+
+- **Total Players** - All players with scores on ScoreSaber
+- **Active Players** - Players with scores in last 30 days
+- **Inactive Rate** - Percentage marked inactive by ScoreSaber
+- **New Players (Monthly)** - Growth rate
+
+### Ranking Distribution
+
+<CardGroup cols={2}>
+  <Card title="Top 100" icon="trophy">
+    Elite players (0.001% of player base)
+  </Card>
+  <Card title="Top 1000" icon="medal">
+    High-level competitive players (0.01%)
+  </Card>
+  <Card title="Top 10,000" icon="star">
+    Strong skilled players (1%)
+  </Card>
+  <Card title="Ranked Players" icon="users">
+    All players with ranked scores (20-30%)
+  </Card>
+</CardGroup>
+
+### Average Player Stats
+
+- **Average PP** - Mean PP across all ranked players
+- **Average Ranked Accuracy** - Community mean accuracy
+- **Average Play Count** - Mean scores per player
+- **Average Active Days** - Days played in last 90 days
+
+## API Access
+
+Programmatic access to statistics:
+
+### Get ScoreSaber Statistics
+
+```http
+GET /statistics
+```
+
+Returns:
+- Platform-wide daily statistics
+- Historical data (last 50 days)
+- HMD usage breakdown
+- Player activity metrics
+
+### Get App Statistics
+
+```http
+GET /statistics/app
+```
+
+Returns:
+- ScoreSaber Reloaded usage metrics
+- API performance data
+- Cache statistics
+- Uptime and health metrics
+
+<Note>
+  Statistics endpoints are cached for 5 minutes. Excessive requests may be rate limited.
+</Note>
+
+## Grafana Integration
+
+For advanced monitoring and analysis:
+
+### Public Dashboard
+
+Access the public Grafana dashboard:
+
+- Real-time metrics (1-minute updates)
+- Custom date range selection
+- Advanced filtering and querying
+- Multi-panel layouts
+- Alert thresholds visualization
+
+**Dashboard URL:** [https://ssr-grafana.fascinated.cc/public-dashboards/...](https://ssr-grafana.fascinated.cc/public-dashboards/19a90072026f442fafa6c371192dddff)
+
+### Available Panels
+
+- API request rate (requests/sec)
+- Response time percentiles (p50, p95, p99)
+- Error rates and status codes
+- Database query performance
+- Cache hit/miss ratios
+- WebSocket connection count
+- Memory and CPU usage
+
+<Tip>
+  Use Grafana during incidents to understand platform performance. The time-series data helps identify patterns and issues.
+</Tip>
+
+## Statistics Update Frequency
+
+Understand data freshness:
+
+- **Real-Time Metrics** - Updated every 1-5 minutes (API stats, uptime)
+- **Daily Statistics** - Updated every hour (player counts, score totals)
+- **Historical Data** - Updated daily at midnight UTC
+- **Charts** - Regenerated on page load with latest data
+
+## Tips for Using Statistics
+
+<AccordionGroup>
+  <Accordion title="Identify Trends">
+    - Compare current metrics to historical averages
+    - Look for seasonal patterns (holidays, school breaks)
+    - Track growth rates month-over-month
+    - Identify impact of major game updates or map releases
+  </Accordion>
+
+  <Accordion title="Community Insights">
+    - HMD trends show which headsets to optimize for
+    - Peak activity times help schedule live events
+    - Player growth indicates community health
+    - Score submission rates show engagement levels
+  </Accordion>
+
+  <Accordion title="Platform Health">
+    - Monitor uptime for service reliability
+    - Track API response times for performance issues
+    - Review error rates for potential bugs
+    - Check cache hit rates for optimization opportunities
+  </Accordion>
+</AccordionGroup>

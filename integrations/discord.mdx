@@ -1,0 +1,420 @@
+---
+title: Discord Integration
+description: Explore how ScoreSaber Reloaded uses Discord for administrative commands, monitoring, and score feed notifications
+---
+
+## Overview
+
+ScoreSaber Reloaded includes a Discord bot that provides administrative commands, monitoring channels, and automated notifications for various events. The bot enables server admins to manage the system and monitor its health in real-time.
+
+## What the Discord Bot Provides
+
+- **Administrative Commands**: Slash commands for system management
+- **Monitoring Channels**: Real-time logs for various system events
+- **Score Feeds**: Automated notifications for notable scores
+- **Status Tracking**: Live presence showing tracked score count
+- **Error Logging**: Centralized error reporting
+
+## Bot Setup
+
+The Discord bot is initialized during backend startup:
+
+```typescript
+export async function initDiscordBot() {
+  if (!env.DISCORD_BOT_TOKEN) {
+    Logger.warn("Discord bot token not found, skipping initialization");
+    return;
+  }
+  
+  Logger.info("Initializing discord bot...");
+  await client.login(env.DISCORD_BOT_TOKEN);
+  
+  async function updatePresence() {
+    client.user?.setPresence({
+      status: "online",
+      activities: [
+        {
+          name: `${formatNumberWithCommas(await ScoreSaberScoreModel.estimatedDocumentCount())} Scores!`,
+          type: ActivityType.Watching,
+          url: "https://ssr.fascinated.cc",
+        },
+      ],
+    });
+  }
+  
+  updatePresence();
+  setInterval(updatePresence, TimeUnit.toMillis(TimeUnit.Minute, 1));
+}
+```
+
+From: `backend/src/bot/bot.ts:65-94`
+
+## Configuration
+
+### Required Environment Variables
+
+```bash
+DISCORD_BOT_TOKEN=your_bot_token_here
+```
+
+### Channel Configuration
+
+The bot uses dedicated channels for different purposes:
+
+```typescript
+export const DiscordChannels = {
+  TRACKED_PLAYER_LOGS: env.DISCORD_CHANNEL_TRACKED_PLAYER_LOGS,
+  PLAYER_SCORE_REFRESH_LOGS: env.DISCORD_CHANNEL_PLAYER_SCORE_REFRESH_LOGS,
+  RANKED_BATCH_LOGS: env.DISCORD_CHANNEL_RANKED_BATCH_LOGS,
+  NUMBER_ONE_FEED: env.DISCORD_CHANNEL_NUMBER_ONE_FEED,
+  TOP_50_SCORES_FEED: env.DISCORD_CHANNEL_TOP_50_SCORES_FEED,
+  SCORE_FLOODGATE_FEED: env.DISCORD_CHANNEL_SCORE_FLOODGATE_FEED,
+  MEDAL_SCORES_FEED: env.DISCORD_CHANNEL_MEDAL_SCORES_FEED,
+  BACKEND_LOGS: env.DISCORD_CHANNEL_BACKEND_LOGS,
+  BEATSAVER_LOGS: env.DISCORD_CHANNEL_BEATSAVER_LOGS,
+};
+```
+
+From: `backend/src/bot/bot.ts:23-33`
+
+## Administrative Commands
+
+### Refresh Ranked Leaderboards
+
+Force a refresh of all ranked leaderboards:
+
+```typescript
+@Slash({
+  description: "Force refresh ranked leaderboards",
+  name: "refresh-ranked-leaderboards",
+})
+async forceRankedLeaderboardsRefresh(interaction: CommandInteraction) {
+  await interaction.deferReply();
+  try {
+    await LeaderboardRankingService.refreshRankedLeaderboards();
+    await interaction.editReply({
+      content: "Ranked leaderboards refreshed",
+    });
+  } catch (error) {
+    await interaction.editReply({
+      content: error instanceof Error ? error.message : "An unknown error occurred",
+    });
+  }
+}
+```
+
+From: `backend/src/bot/command/refresh-ranked-leaderboards.ts:11-27`
+
+**Usage:** `/refresh-ranked-leaderboards`
+
+### Available Commands
+
+The bot includes several admin commands (all require owner permissions):
+
+- `/refresh-ranked-leaderboards` - Refresh ranked map data
+- `/fetch-missing-player-scores` - Fetch scores for tracked players
+- `/force-track-player-statistics` - Force track player statistics
+- `/refresh-medal-scores` - Refresh medal score data
+- `/update-player-medals` - Update player medal counts
+
+From: `backend/src/bot/bot.ts:17-21`
+
+## Monitoring Channels
+
+### Tracked Player Logs
+
+Logs when players are added or removed from tracking:
+
+```typescript
+TRACKED_PLAYER_LOGS: env.DISCORD_CHANNEL_TRACKED_PLAYER_LOGS
+```
+
+### Player Score Refresh Logs
+
+Tracks score refresh operations:
+
+```typescript
+PLAYER_SCORE_REFRESH_LOGS: env.DISCORD_CHANNEL_PLAYER_SCORE_REFRESH_LOGS
+```
+
+### Backend Logs
+
+General backend errors and important events:
+
+```typescript
+BACKEND_LOGS: env.DISCORD_CHANNEL_BACKEND_LOGS
+```
+
+### BeatSaver Logs
+
+BeatSaver API interactions and errors:
+
+```typescript
+BEATSAVER_LOGS: env.DISCORD_CHANNEL_BEATSAVER_LOGS
+```
+
+From: `backend/src/bot/bot.ts:23-33`
+
+## Score Feeds
+
+### Number One Feed
+
+Notifies when players achieve rank 1 on leaderboards:
+
+```typescript
+NUMBER_ONE_FEED: env.DISCORD_CHANNEL_NUMBER_ONE_FEED
+```
+
+### Top 50 Scores Feed
+
+Tracks all top 50 global scores:
+
+```typescript
+TOP_50_SCORES_FEED: env.DISCORD_CHANNEL_TOP_50_SCORES_FEED
+```
+
+### Score Floodgate Feed
+
+High-volume feed for all tracked scores:
+
+```typescript
+SCORE_FLOODGATE_FEED: env.DISCORD_CHANNEL_SCORE_FLOODGATE_FEED
+```
+
+### Medal Scores Feed
+
+Notifies when players earn medal-worthy scores:
+
+```typescript
+MEDAL_SCORES_FEED: env.DISCORD_CHANNEL_MEDAL_SCORES_FEED
+```
+
+From: `backend/src/bot/bot.ts:23-33`
+
+## Sending Messages
+
+### Send Embed
+
+Send rich embed messages to channels:
+
+```typescript
+export async function sendEmbedToChannel(
+  channelId: (typeof DiscordChannels)[keyof typeof DiscordChannels],
+  embed: EmbedBuilder,
+  components: ActionRowData<MessageActionRowComponentBuilder>[] = []
+) {
+  if (!channelId) {
+    return;
+  }
+  try {
+    const channel = await client.channels.fetch(channelId);
+    if (channel != undefined && channel.isSendable()) {
+      return await channel.send({ embeds: [embed], components });
+    }
+  } catch (error) {
+    Logger.error(`Failed to send message to channel ${channelId}:`, error);
+  }
+  return undefined;
+}
+```
+
+From: `backend/src/bot/bot.ts:102-119`
+
+### Send Text Message
+
+Send plain text messages:
+
+```typescript
+export async function sendMessageToChannel(
+  channelId: (typeof DiscordChannels)[keyof typeof DiscordChannels],
+  message: string
+) {
+  if (!channelId) {
+    return;
+  }
+  
+  try {
+    const channel = await client.channels.fetch(channelId);
+    if (channel != undefined && channel.isSendable()) {
+      return await channel.send(message);
+    }
+  } catch (error) {
+    Logger.error(`Failed to send message to channel ${channelId}:`, error);
+  }
+  return undefined;
+}
+```
+
+From: `backend/src/bot/bot.ts:127-144`
+
+### Send File
+
+Send file attachments:
+
+```typescript
+export async function sendFile(
+  channelId: (typeof DiscordChannels)[keyof typeof DiscordChannels],
+  filename: string,
+  content: string,
+  message?: string
+) {
+  if (!channelId) {
+    return;
+  }
+  
+  try {
+    const channel = await client.channels.fetch(channelId);
+    if (channel != undefined && channel.isSendable()) {
+      return await channel.send({
+        content: message,
+        files: [
+          new AttachmentBuilder(Buffer.from(content), {
+            name: filename,
+          }),
+        ],
+      });
+    }
+  } catch (error) {
+    Logger.error(`Error sending file to channel ${channelId}:`, error);
+  }
+}
+```
+
+From: `backend/src/bot/bot.ts:153-178`
+
+## Bot Presence
+
+The bot's status displays the total number of tracked scores:
+
+```typescript
+client.user?.setPresence({
+  status: "online",
+  activities: [
+    {
+      name: `${formatNumberWithCommas(await ScoreSaberScoreModel.estimatedDocumentCount())} Scores!`,
+      type: ActivityType.Watching,
+      url: "https://ssr.fascinated.cc",
+    },
+  ],
+});
+```
+
+The presence updates every minute to show the current score count.
+
+From: `backend/src/bot/bot.ts:76-85`
+
+## Error Handling
+
+The bot includes error handling for interaction failures:
+
+```typescript
+client.on("interactionCreate", interaction => {
+  try {
+    client.executeInteraction(interaction);
+  } catch (error) {
+    Logger.error("Error executing interaction:", error);
+    if (interaction.isCommand() || interaction.isContextMenuCommand()) {
+      interaction.reply({
+        content: "An error occurred while processing your request. Please try again later.",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+  }
+});
+```
+
+From: `backend/src/bot/bot.ts:51-63`
+
+## Permissions
+
+All administrative commands are protected by permission guards:
+
+```typescript
+@Discord()
+@Guard(IsGuildUser(OwnerOnly))
+class RefreshRankedLeaderboards {
+  // Command implementation
+}
+```
+
+From: `backend/src/bot/command/refresh-ranked-leaderboards.ts:7-10`
+
+<Warning>
+Only users with the OwnerOnly permission can execute administrative commands. Configure this in your Discord server settings.
+</Warning>
+
+## Use Cases
+
+### System Monitoring
+
+Administrators can monitor system health through dedicated channels:
+- Track when players are added/removed
+- Monitor score refresh operations
+- Receive alerts for errors
+- Track BeatSaver API issues
+
+### Manual Interventions
+
+When needed, admins can manually trigger:
+- Leaderboard refreshes
+- Player score fetches
+- Medal updates
+- Statistics tracking
+
+### Community Engagement
+
+Score feed channels can be used for:
+- Celebrating top performances
+- Tracking rank 1 achievements
+- Monitoring medal-worthy scores
+
+## Bot Client Configuration
+
+The bot is configured with necessary intents:
+
+```typescript
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
+  ],
+  silent: true,
+});
+```
+
+From: `backend/src/bot/bot.ts:35-43`
+
+## Ready Event
+
+When the bot connects, it initializes application commands:
+
+```typescript
+client.once("clientReady", async () => {
+  await client.initApplicationCommands();
+  Logger.info("Discord bot ready!");
+});
+```
+
+From: `backend/src/bot/bot.ts:45-49`
+
+## Best Practices
+
+<Tip>
+Set up separate Discord channels for different log types to keep monitoring organized and prevent channel spam.
+</Tip>
+
+<Note>
+The bot token should be kept secure and never committed to version control. Use environment variables for configuration.
+</Note>
+
+<Warning>
+High-volume feeds like SCORE_FLOODGATE_FEED can generate many messages. Consider using a dedicated channel with slower mode enabled.
+</Warning>
+
+## Related Documentation
+
+- [Architecture Overview](/architecture/overview)
+- [Backend Architecture](/architecture/backend)
+- [Score Tracking](/features/score-tracking)

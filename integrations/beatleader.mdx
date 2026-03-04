@@ -1,0 +1,359 @@
+---
+title: BeatLeader Integration
+description: Discover how ScoreSaber Reloaded integrates with BeatLeader to provide enhanced score analytics and replay functionality
+---
+
+## Overview
+
+BeatLeader is an alternative competitive platform for Beat Saber that provides detailed score analytics and replay capabilities. ScoreSaber Reloaded integrates with BeatLeader to offer enhanced score statistics, hand accuracy tracking, and replay storage for tracked players.
+
+## What is BeatLeader?
+
+BeatLeader provides:
+
+- Detailed score statistics and breakdowns
+- Hand accuracy tracking (left/right hand)
+- Full combo (FC) accuracy calculations
+- Score improvement tracking
+- Replay file storage and viewing
+- Advanced performance metrics
+
+## How SSR Integrates
+
+### API Service
+
+SSR uses a dedicated BeatLeader API service with rate limiting:
+
+```typescript
+export class BeatLeaderService extends ApiService {
+  constructor() {
+    // 300 requests per minute
+    super(new Cooldown(60_000 / 300, 150), ApiServiceName.BEAT_LEADER, {
+      useProxy: true,
+      proxySwitchThreshold: 10,
+      proxyResetThreshold: 100,
+    });
+  }
+}
+```
+
+From: `common/src/api-service/impl/beatleader.ts:8-16`
+
+### Score Stats Endpoint
+
+The service fetches detailed score statistics from BeatLeader's CDN:
+
+```typescript
+const LOOKUP_MAP_STATS_BY_SCORE_ID_ENDPOINT = 
+  `https://cdn.scorestats.beatleader.xyz/:scoreId.json`;
+
+async lookupScoreStats(scoreId: number): Promise<ScoreStatsToken | undefined> {
+  const response = await this.fetch<ScoreStatsToken>(
+    LOOKUP_MAP_STATS_BY_SCORE_ID_ENDPOINT.replace(":scoreId", scoreId.toString())
+  );
+  return response;
+}
+```
+
+From: `common/src/api-service/impl/beatleader.ts:6-38`
+
+## Data Synchronized
+
+### Score Statistics
+
+BeatLeader provides comprehensive score statistics that SSR tracks for each play:
+
+- **Base metrics**: Score, accuracy, misses
+- **Hand accuracy**: Separate tracking for left and right hand
+- **FC accuracy**: Theoretical accuracy if full combo was achieved
+- **Miss breakdown**: Missed notes, bad cuts, bomb hits, wall hits
+- **Pauses**: Number of pauses during the play
+- **Full combo status**: Whether the score was a full combo
+
+```typescript
+const data = {
+  playerId: playerId,
+  songHash: leaderboard.song.hash.toUpperCase(),
+  songDifficulty: difficulty.difficultyName,
+  songCharacteristic: difficulty.modeName,
+  songScore: score.baseScore,
+  scoreId: score.id,
+  leaderboardId: leaderboard.id,
+  misses: {
+    misses: getMisses(score),
+    missedNotes: score.missedNotes,
+    bombCuts: score.bombCuts,
+    badCuts: score.badCuts,
+    wallsHit: score.wallsHit,
+  },
+  pauses: score.pauses,
+  fcAccuracy: score.fcAccuracy * 100,
+  fullCombo: score.fullCombo,
+  handAccuracy: {
+    left: score.accLeft,
+    right: score.accRight,
+  },
+  timestamp: new Date(Number(score.timeset) * 1000),
+} as BeatLeaderScore;
+```
+
+From: `backend/src/service/beatleader.service.ts:105-128`
+
+### Score Improvements
+
+When a player improves their score, BeatLeader tracks the improvement delta:
+
+```typescript
+if (rawScoreImprovement && rawScoreImprovement.score > 0) {
+  data.scoreImprovement = {
+    score: rawScoreImprovement.score,
+    misses: {
+      misses: getMisses(rawScoreImprovement),
+      missedNotes: rawScoreImprovement.missedNotes,
+      bombCuts: rawScoreImprovement.bombCuts,
+      badCuts: rawScoreImprovement.badCuts,
+      wallsHit: rawScoreImprovement.wallsHit,
+    },
+    accuracy: rawScoreImprovement.accuracy * 100,
+    pauses: rawScoreImprovement.pauses,
+    handAccuracy: {
+      left: rawScoreImprovement.accLeft,
+      right: rawScoreImprovement.accRight,
+    },
+  };
+}
+```
+
+From: `backend/src/service/beatleader.service.ts:130-147`
+
+## Replay Storage
+
+### Automatic Replay Archival
+
+SSR automatically downloads and stores replays for:
+
+- All scores from players with replay tracking enabled
+- All top 50 global scores
+
+```typescript
+if (isProduction() && player && (player.trackReplays || isTop50GlobalScore)) {
+  try {
+    const replayId = getBeatLeaderReplayId(data);
+    const replay = await Request.get<ArrayBuffer>(
+      `https://cdn.replays.beatleader.xyz/${replayId}`, 
+      { returns: "arraybuffer" }
+    );
+    
+    if (replay !== undefined) {
+      await MinioService.saveFile(
+        MinioBucket.BeatLeaderReplays, 
+        `${replayId}`, 
+        Buffer.from(replay)
+      );
+      return true;
+    }
+  } catch (error) {
+    Logger.error(`Failed to save replay for ${score.id}: ${error}`);
+  }
+}
+```
+
+From: `backend/src/service/beatleader.service.ts:153-173`
+
+### Replay Access
+
+Replays can be accessed through the API:
+
+```typescript
+app.get(
+  "/replay/:scoreId",
+  async ({ params: { scoreId } }) => {
+    const replayUrl = await PlayerReplayService.getPlayerReplayUrl(scoreId);
+    if (!replayUrl) {
+      throw new NotFoundError(`Replay not found for score "${scoreId}"`);
+    }
+    return redirect(replayUrl);
+  },
+  {
+    tags: ["BeatLeader"],
+    params: z.object({
+      scoreId: z.string().regex(/^\d+\.bsor$/),
+    }),
+    detail: {
+      description: "Redirect to the raw BeatLeader replay file",
+    },
+  }
+)
+```
+
+From: `backend/src/controller/beatleader.controller.ts:27-46`
+
+## API Endpoints
+
+### Score Stats
+
+Fetch detailed score statistics for a specific score:
+
+```typescript
+GET /beatleader/scorestats/:scoreId
+```
+
+**Parameters:**
+- `scoreId` (number): The BeatLeader score ID
+
+**Returns:** `ScoreStatsResponse` containing current and previous score statistics
+
+```typescript
+app.get(
+  "/scorestats/:scoreId",
+  async ({ params: { scoreId } }): Promise<ScoreStatsResponse> => {
+    return BeatLeaderService.getScoresFullScoreStats(scoreId);
+  },
+  {
+    tags: ["BeatLeader"],
+    params: z.object({
+      scoreId: z.coerce.number(),
+    }),
+    detail: {
+      description: "Fetch BeatLeader score stats",
+    },
+  }
+)
+```
+
+From: `backend/src/controller/beatleader.controller.ts:12-26`
+
+### Replay Download
+
+Redirect to the raw replay file:
+
+```typescript
+GET /beatleader/replay/:scoreId
+```
+
+**Parameters:**
+- `scoreId` (string): Score ID in format `{id}.bsor`
+
+**Returns:** Redirect to the replay file URL
+
+## Score Comparison
+
+SSR can compare a player's current score with their previous attempt:
+
+```typescript
+public static async getScoresFullScoreStats(scoreId: number): Promise<ScoreStatsResponse> {
+  const current = await this.getBeatLeaderScore(scoreId);
+  if (current == undefined) {
+    throw new NotFoundError(`Score ${scoreId} not found`);
+  }
+  
+  const previous = await this.getPreviousBeatLeaderScore(
+    current.playerId,
+    current.songHash,
+    current.leaderboardId,
+    current.timestamp
+  );
+  
+  const [currentStats, previousStats] = await Promise.all([
+    this.getScoreStats(current.scoreId),
+    previous ? this.getScoreStats(previous.scoreId) : undefined,
+  ]);
+  
+  return {
+    current: currentStats,
+    previous: previousStats,
+  };
+}
+```
+
+From: `backend/src/service/beatleader.service.ts:217-242`
+
+## Tracking Criteria
+
+<Note>
+BeatLeader scores are only tracked for players who are already being tracked in the SSR database. This prevents storing data for every BeatLeader player globally.
+</Note>
+
+```typescript
+public static async trackBeatLeaderScore(
+  score: BeatLeaderScoreToken,
+  isTop50GlobalScore?: boolean
+): Promise<BeatLeaderScore | undefined> {
+  const { playerId } = score;
+  const player: Player | null = await PlayerModel.findById(playerId).lean();
+  
+  // Only track for players that are being tracked
+  if (player == null) {
+    return undefined;
+  }
+  // ... tracking logic
+}
+```
+
+From: `backend/src/service/beatleader.service.ts:81-97`
+
+## Caching
+
+BeatLeader data is cached to improve performance:
+
+```typescript
+public static async getBeatLeaderScore(scoreId: number): Promise<BeatLeaderScore | undefined> {
+  return CacheService.fetchWithCache(
+    CacheId.BeatLeaderScore, 
+    `beatleader-score:${scoreId}`, 
+    async () => {
+      const beatLeaderScore = await BeatLeaderScoreModel.findOne({
+        scoreId: scoreId,
+      }).lean();
+      return beatLeaderScore ? beatLeaderScoreToObject(beatLeaderScore) : undefined;
+    }
+  );
+}
+```
+
+From: `backend/src/service/beatleader.service.ts:64-74`
+
+## Discord Integration
+
+Failed replay saves are logged to Discord for monitoring:
+
+```typescript
+catch (error) {
+  sendEmbedToChannel(
+    DiscordChannels.BACKEND_LOGS,
+    createGenericEmbed(
+      "BeatLeader Replays", 
+      `Failed to save replay for ${score.id}: ${error}`
+    )
+  );
+  Logger.error(`Failed to save replay for ${score.id}: ${error}`);
+}
+```
+
+From: `backend/src/service/beatleader.service.ts:165-169`
+
+## Benefits
+
+Integrating with BeatLeader provides:
+
+1. **Enhanced Analytics**: Detailed hand accuracy and miss breakdowns
+2. **Replay Preservation**: Long-term storage of replay files
+3. **Score Improvement Tracking**: Track progress over multiple attempts
+4. **Full Combo Analysis**: See what accuracy you could achieve with FC
+5. **Historical Data**: Compare current performance with past plays
+
+## Best Practices
+
+<Tip>
+Enable replay tracking for players whose replays you want to preserve long-term, as BeatLeader replays may not be available indefinitely.
+</Tip>
+
+<Warning>
+Replay storage requires significant disk space. Only enable tracking for players who actively use the feature.
+</Warning>
+
+## Related Documentation
+
+- [Score Tracking](/features/score-tracking)
+- [Player Profiles](/features/player-profiles)
+- [BeatSaver Integration](/integrations/beatsaver)

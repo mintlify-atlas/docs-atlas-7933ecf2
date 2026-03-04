@@ -1,0 +1,302 @@
+---
+title: "Leaderboard Endpoints"
+description: "API endpoints for searching and retrieving leaderboard information from ScoreSaber"
+---
+
+## Search Leaderboards
+
+`GET /leaderboard/search`
+
+Search ScoreSaber leaderboards with comprehensive filtering options.
+
+<ParamField query="page" type="number" default="1">
+  Page number for pagination
+</ParamField>
+
+<ParamField query="ranked" type="boolean">
+  Filter for ranked maps only
+</ParamField>
+
+<ParamField query="qualified" type="boolean">
+  Filter for qualified maps only
+</ParamField>
+
+<ParamField query="verified" type="boolean">
+  Filter for verified maps only
+</ParamField>
+
+<ParamField query="category" type="number">
+  Category ID for filtering (e.g., 0 for trending, 1 for date ranked)
+</ParamField>
+
+<ParamField query="minStar" type="number">
+  Minimum star difficulty
+</ParamField>
+
+<ParamField query="maxStar" type="number">
+  Maximum star difficulty
+</ParamField>
+
+<ParamField query="sort" type="number">
+  Sort order (0 for ascending, 1 for descending)
+</ParamField>
+
+<ParamField query="search" type="string">
+  Search query for song name or mapper
+</ParamField>
+
+<ResponseField name="leaderboards" type="array">
+  Array of matching leaderboards
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  Pagination metadata including total results and current page
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://api.scoresaber.com/leaderboard/search?ranked=true&minStar=8&maxStar=10&search=reality"
+```
+
+### Example Response
+
+```json
+{
+  "leaderboards": [
+    {
+      "id": 123456,
+      "songName": "Reality Check Through The Skull",
+      "songAuthorName": "DM DOKURO",
+      "levelAuthorName": "Nuketime",
+      "difficulty": "ExpertPlus",
+      "stars": 9.12,
+      "ranked": true,
+      "qualified": false,
+      "plays": 50000,
+      "dailyPlays": 250
+    }
+  ],
+  "metadata": {
+    "total": 100,
+    "page": 1,
+    "itemsPerPage": 10
+  }
+}
+```
+
+---
+
+## Get Ranking Request Queue
+
+`GET /leaderboard/ranking-queue`
+
+Fetch the current ScoreSaber ranking request queue showing maps pending review.
+
+<ResponseField name="requests" type="array">
+  Array of ranking requests currently in the queue
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/leaderboard/ranking-queue
+```
+
+### Example Response
+
+```json
+{
+  "requests": [
+    {
+      "leaderboardId": 789456,
+      "songName": "Pending Song",
+      "levelAuthorName": "Mapper Name",
+      "difficulty": "ExpertPlus",
+      "requestedDate": "2024-01-01T12:00:00.000Z",
+      "reviewPriority": 1
+    }
+  ]
+}
+```
+
+---
+
+## Get Leaderboard by ID
+
+`GET /leaderboard/by-id/:leaderboardId`
+
+Fetch detailed leaderboard information by leaderboard ID, including BeatSaver data and star change history.
+
+<ParamField path="leaderboardId" type="number" required>
+  The ScoreSaber leaderboard ID
+</ParamField>
+
+<ResponseField name="leaderboard" type="object">
+  Complete leaderboard information
+</ResponseField>
+
+<ResponseField name="beatSaver" type="object">
+  BeatSaver map information including download URL, uploader, ratings
+</ResponseField>
+
+<ResponseField name="starChangeHistory" type="array">
+  History of star rating changes for this leaderboard
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/leaderboard/by-id/123456
+```
+
+### Example Response
+
+```json
+{
+  "leaderboard": {
+    "id": 123456,
+    "songName": "Reality Check Through The Skull",
+    "songSubName": "",
+    "songAuthorName": "DM DOKURO",
+    "levelAuthorName": "Nuketime",
+    "difficulty": "ExpertPlus",
+    "characteristic": "Standard",
+    "stars": 9.12,
+    "ranked": true,
+    "qualified": false,
+    "rankedDate": "2020-01-15T10:30:00.000Z",
+    "plays": 50000,
+    "dailyPlays": 250,
+    "maxScore": 1234567
+  },
+  "beatSaver": {
+    "hash": "abc123def456",
+    "key": "1a2b3",
+    "name": "Reality Check Through The Skull",
+    "uploader": {
+      "id": 12345,
+      "name": "Nuketime"
+    },
+    "stats": {
+      "downloads": 100000,
+      "upvotes": 5000,
+      "downvotes": 50,
+      "score": 0.99
+    },
+    "downloadURL": "https://cdn.beatsaver.com/..."
+  },
+  "starChangeHistory": [
+    {
+      "date": "2020-01-15T10:30:00.000Z",
+      "oldStars": 0,
+      "newStars": 9.12
+    },
+    {
+      "date": "2020-06-20T14:00:00.000Z",
+      "oldStars": 9.12,
+      "newStars": 9.45
+    }
+  ]
+}
+```
+
+---
+
+## Get Leaderboard by Hash
+
+`GET /leaderboard/by-hash/:hash/:difficulty/:characteristic`
+
+Fetch leaderboard information by map hash, difficulty, and characteristic.
+
+<ParamField path="hash" type="string" required>
+  The map hash (e.g., `abc123def456`)
+</ParamField>
+
+<ParamField path="difficulty" type="'Easy' | 'Normal' | 'Hard' | 'Expert' | 'ExpertPlus'" required>
+  The difficulty level
+</ParamField>
+
+<ParamField path="characteristic" type="'Standard' | 'OneSaber' | 'NoArrows' | 'Lawless' | '90Degree' | '360Degree' | 'Lightshow'" required>
+  The map characteristic
+</ParamField>
+
+<ResponseField name="leaderboard" type="object">
+  Complete leaderboard information
+</ResponseField>
+
+<ResponseField name="beatSaver" type="object">
+  BeatSaver map information
+</ResponseField>
+
+<ResponseField name="starChangeHistory" type="array">
+  History of star rating changes
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/leaderboard/by-hash/abc123def456/ExpertPlus/Standard
+```
+
+### Example Response
+
+```json
+{
+  "leaderboard": {
+    "id": 123456,
+    "songName": "Reality Check Through The Skull",
+    "difficulty": "ExpertPlus",
+    "characteristic": "Standard",
+    "stars": 9.12,
+    "ranked": true
+  },
+  "beatSaver": {
+    "hash": "abc123def456",
+    "key": "1a2b3",
+    "name": "Reality Check Through The Skull"
+  },
+  "starChangeHistory": []
+}
+```
+
+---
+
+## Get Play Count by HMD
+
+`GET /leaderboard/play-count-by-hmd/:leaderboardId`
+
+Fetch the play count breakdown by headset type for a specific leaderboard.
+
+<ParamField path="leaderboardId" type="number" required>
+  The leaderboard ID
+</ParamField>
+
+<ResponseField name="hmds" type="object">
+  Object mapping HMD types to play counts
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/leaderboard/play-count-by-hmd/123456
+```
+
+### Example Response
+
+```json
+{
+  "hmds": {
+    "Quest 3": 15000,
+    "Quest 2": 12000,
+    "Valve Index": 8000,
+    "Rift S": 5000,
+    "Vive Pro 2": 3000,
+    "Quest Pro": 2500,
+    "Windows Mixed Reality": 2000,
+    "Quest": 1500,
+    "Vive": 1000,
+    "Unknown": 500
+  }
+}
+```

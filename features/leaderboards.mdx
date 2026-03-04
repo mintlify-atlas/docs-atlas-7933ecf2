@@ -1,0 +1,423 @@
+---
+title: Leaderboards
+description: Comprehensive map leaderboards with advanced filtering, score analysis, and integration with BeatSaver for Beat Saber on ScoreSaber Reloaded.
+---
+
+## Overview
+
+Leaderboards are the competitive heart of Beat Saber, and ScoreSaber Reloaded enhances them with rich metadata, advanced filtering, and seamless integration with BeatSaver. Every ranked and unranked map has a dedicated leaderboard showing player scores and rankings.
+
+<CardGroup cols={2}>
+  <Card title="Complete Score Lists" icon="list">
+    View all scores on any leaderboard with pagination and filtering
+  </Card>
+  <Card title="Map Information" icon="music">
+    Integrated BeatSaver data with ratings, downloads, and previews
+  </Card>
+  <Card title="Friend Filtering" icon="users">
+    See where you and your friends rank on specific maps
+  </Card>
+  <Card title="Star History" icon="star">
+    Track difficulty rating changes over time for ranked maps
+  </Card>
+</CardGroup>
+
+## Accessing Leaderboards
+
+Leaderboards can be accessed through multiple pathways:
+
+### Direct Navigation
+
+- **From Player Scores** - Click any song name on a player's profile
+- **From Live Feed** - Click song names in the live score feed
+- **Direct URL** - Navigate to `/leaderboard/{leaderboardId}`
+- **Search** - Use the leaderboard search function (if enabled)
+
+### Leaderboard Search
+
+Find specific maps using the search interface:
+
+```http
+GET /leaderboard/search?page={page}&search={query}
+```
+
+**Search Filters:**
+- `search` - Song name or mapper name
+- `ranked` - Only show ranked maps
+- `qualified` - Only show qualified maps (pending rank)
+- `verified` - Only show verified unranked maps
+- `minStar` / `maxStar` - Difficulty range (ranked maps)
+- `category` - Map category filter
+- `sort` - Sort order (plays, date, etc.)
+
+<Tip>
+  Use the star range filters to find maps at your skill level. Most intermediate players thrive in the 4-7 star range.
+</Tip>
+
+## Leaderboard Layout
+
+Leaderboards are organized into two main sections:
+
+### Main Content Area
+
+**Score List:**
+- Paginated player scores (50 per page)
+- Sortable columns (rank, player, score, accuracy, PP, time)
+- Medal indicators for top 10 positions
+- Your score highlighted if present
+- Friend scores highlighted
+
+**Navigation:**
+- Page selector with quick jump
+- "Around Me" button to jump to your rank
+- Friend filter toggle
+- Country filter dropdown
+
+### Sidebar Information
+
+The sidebar provides comprehensive map details:
+
+<Accordion title="Song Information">
+  - **Cover Art** - High-resolution album artwork
+  - **Song Name** - Full title
+  - **Artist** - Song author
+  - **Mapper** - Level creator
+  - **Duration** - Song length
+  - **BPM** - Beats per minute
+  - **Upload Date** - When added to BeatSaver
+</Accordion>
+
+<Accordion title="Leaderboard Statistics">
+  - **Total Plays** - All-time play count
+  - **Daily Plays** - Plays in the last 24 hours
+  - **Max Score** - Maximum possible score
+  - **Star Rating** - Difficulty (ranked maps only)
+  - **Status** - Ranked, Qualified, Verified, or Unranked
+  - **Created Date** - When the leaderboard was created
+</Accordion>
+
+<Accordion title="BeatSaver Integration">
+  - **BSR Code** - Quick copy code for in-game download
+  - **Map Rating** - Community rating (0-100%)
+  - **Download Count** - Total downloads
+  - **Upvotes/Downvotes** - Community feedback
+  - **Tags** - Genre, style, and characteristic tags
+  - **Description** - Mapper's notes
+</Accordion>
+
+## Leaderboard Actions
+
+Interactive buttons for quick map access:
+
+### Download & Install
+
+<CardGroup cols={2}>
+  <Card title="One-Click Install" icon="download">
+    Install map directly to Beat Saber using BeatSaver integration
+  </Card>
+  <Card title="Copy BSR" icon="copy">
+    Copy the BSR code to paste in-game with !bsr command
+  </Card>
+  <Card title="BeatSaver Link" icon="link">
+    Open the map page on BeatSaver.com
+  </Card>
+  <Card title="Preview Map" icon="play">
+    Listen to the song preview before downloading
+  </Card>
+</CardGroup>
+
+### Difficulty Selector
+
+Maps often have multiple difficulties:
+
+1. Click the difficulty dropdown
+2. Select a different difficulty (Easy, Normal, Hard, Expert, Expert+)
+3. The leaderboard updates to show scores for that difficulty
+4. Each difficulty has its own leaderboard ID and star rating
+
+<Note>
+  Not all difficulties are ranked. A map can have ranked Expert+ but unranked Expert.
+</Note>
+
+## Friend Leaderboards
+
+Filter leaderboards to show only friends:
+
+### Setting Up Friend Filtering
+
+1. Add friends using the "Add Friend" button on their profiles
+2. Navigate to any leaderboard
+3. Toggle "Friends Only" filter
+4. See only your scores and your friends' scores
+5. Compare directly without scrolling through thousands of entries
+
+### Friend Score Comparison
+
+```http
+POST /scores/friend/leaderboard/{leaderboardId}/{page}
+```
+
+**Request Body:**
+```json
+{
+  "friendIds": ["player_id_1", "player_id_2", "..."]
+}
+```
+
+**Maximum Friends:** 100 player IDs per request
+
+<Tip>
+  Use friend leaderboards to create informal competitions. Challenge friends to beat your scores on specific maps.
+</Tip>
+
+## Country Filtering
+
+View leaderboards filtered by country:
+
+1. Open the country filter dropdown
+2. Select a country (e.g., United States, Japan, Germany)
+3. Leaderboard shows only scores from that country
+4. Country rank displayed instead of global rank
+5. Useful for regional competitions
+
+## Star History
+
+Ranked maps' star ratings can change over time as the Ranking Team rebalances:
+
+### Viewing Star History
+
+At the bottom of ranked leaderboards:
+
+- **Change Log** - List of all star rating changes
+- **Date & Time** - When each change occurred
+- **Old Rating → New Rating** - What changed
+- **Reason** - Why the change was made (if provided)
+
+<Accordion title="Why Star Ratings Change">
+  The ScoreSaber Ranking Team periodically reviews maps and adjusts star ratings to:
+  - Fix overweighted or underweighted maps
+  - Maintain consistency across similar difficulty maps
+  - Account for new mapping techniques or meta changes
+  - Correct errors in initial rating
+
+  Star changes affect PP calculation, so your total PP may fluctuate when maps are reweighted.
+</Accordion>
+
+## HMD Statistics
+
+See which VR headsets are most popular for each map:
+
+### Play Count by HMD
+
+```http
+GET /leaderboard/play-count-by-hmd/{leaderboardId}
+```
+
+Returns breakdown:
+- Oculus Quest 2
+- Valve Index
+- Meta Quest 3
+- PlayStation VR
+- And more...
+
+Displayed as:
+- Total plays per headset
+- Percentage distribution
+- Visual chart (pie or bar)
+
+<Note>
+  HMD data is only available for leaderboards with sufficient play count (typically 100+ plays).
+</Note>
+
+## Ranking Queue
+
+View maps currently under consideration for rank:
+
+### Accessing the Queue
+
+```http
+GET /leaderboard/ranking-queue
+```
+
+Navigate to the ranking queue page to see:
+
+- Maps submitted for ranking consideration
+- Current status (Pending, In Review, Rejected, Qualified)
+- Ranking Team feedback
+- Expected qualification date
+- Community votes and comments
+
+<Tip>
+  Follow the ranking queue to discover new challenging maps before they're ranked. Qualified maps are excellent practice.
+</Tip>
+
+## Leaderboard Performance
+
+ScoreSaber Reloaded optimizes leaderboard loading:
+
+- **Server-Side Rendering** - Initial page loads instantly
+- **5-Minute Cache** - Frequently accessed leaderboards cached
+- **Pagination** - Efficient loading of large leaderboards
+- **Lazy Loading** - Images and additional data load as needed
+
+## Score Details on Leaderboards
+
+Expand any score to see detailed information:
+
+### Score Dropdown
+
+Click the chevron icon next to a score:
+
+<AccordionGroup>
+  <Accordion title="Score Statistics">
+    - Accuracy breakdown (left/right hand)
+    - Combo and max combo
+    - Misses (bad cuts and missed notes)
+    - Pauses
+    - Full combo indicator
+  </Accordion>
+
+  <Accordion title="Player Context">
+    - Player's rank (global and country)
+    - Player's total PP
+    - Link to player profile
+    - Add friend button
+  </Accordion>
+
+  <Accordion title="Score Comparison">
+    - PP difference to your score
+    - Accuracy difference
+    - Rank difference
+    - Score improvement suggestions
+  </Accordion>
+
+  <Accordion title="Additional Actions">
+    - View score page (if BeatLeader tracked)
+    - Download replay
+    - Copy score ID
+    - Report score (if suspicious)
+  </Accordion>
+</AccordionGroup>
+
+## PP Calculation Display
+
+Ranked leaderboards show PP calculation:
+
+### PP Curve Visualization
+
+View the PP curve chart:
+
+- X-axis: Accuracy percentage (0-100%)
+- Y-axis: PP earned
+- Your score plotted on the curve
+- Hover to see PP at different accuracy levels
+- Understand PP falloff for lower accuracy
+
+<Tip>
+  The PP curve shows diminishing returns below ~90% accuracy. A 95% play earns significantly more PP than 90%.
+</Tip>
+
+## Leaderboard Sharing
+
+Share leaderboards with others:
+
+- **Direct URL** - Copy the page URL to share
+- **Embed Code** - Generate HTML embed (future feature)
+- **Discord Rich Embeds** - URLs automatically show rich previews in Discord
+- **Screenshot** - Built-in screenshot tool (future feature)
+
+## API Integration
+
+Developers can access leaderboard data:
+
+### Get Leaderboard by ID
+
+```http
+GET /leaderboard/by-id/{leaderboardId}
+```
+
+Returns:
+- Complete leaderboard metadata
+- BeatSaver integration data
+- Star change history
+- Current status and statistics
+
+### Get Leaderboard by Hash
+
+```http
+GET /leaderboard/by-hash/{hash}/{difficulty}/{characteristic}
+```
+
+**Parameters:**
+- `hash` (string) - Map hash from BeatSaver
+- `difficulty` - 1, 3, 5, 7, 9 (Easy to Expert+)
+- `characteristic` - Standard, OneSaber, NoArrows, etc.
+
+### Get Leaderboard Scores
+
+```http
+GET /scores/leaderboard/{leaderboardId}/{page}?country={country}
+```
+
+**Parameters:**
+- `leaderboardId` (number) - ScoreSaber leaderboard ID
+- `page` (number) - Page number (1-indexed)
+- `country` (optional string) - ISO country code
+
+<Note>
+  API responses include full player information, score statistics, and timestamps. Rate limiting applies: 300 requests per minute per IP.
+</Note>
+
+## Advanced Features
+
+<AccordionGroup>
+  <Accordion title="Score Prediction">
+    Based on your historical accuracy on similar star ratings, ScoreSaber Reloaded can predict:
+    - Your likely PP earnings on a new map
+    - Expected accuracy range
+    - Suggested attempt order for PP optimization
+
+    Predictions appear on leaderboards you haven't played yet.
+  </Accordion>
+
+  <Accordion title="Replay Analysis">
+    For scores with BeatLeader tracking:
+    - View 3D replay visualization
+    - Analyze swing patterns
+    - Identify timing errors
+    - Compare replays with top players
+  </Accordion>
+
+  <Accordion title="Leaderboard Alerts">
+    Set up alerts for specific leaderboards:
+    - Get notified when someone beats your score
+    - Track when you're pushed off top 10 (lose medals)
+    - Monitor world record changes
+    - Follow specific players' scores on favorite maps
+  </Accordion>
+</AccordionGroup>
+
+## Tips for Using Leaderboards
+
+<AccordionGroup>
+  <Accordion title="Finding New Maps">
+    - Sort by "Most Plays (Daily)" to find trending maps
+    - Filter by your preferred star range
+    - Check BeatSaver ratings before downloading
+    - Preview songs to ensure you like the music
+  </Accordion>
+
+  <Accordion title="Competitive Play">
+    - Use "Around Me" to see nearby ranked players
+    - Study top scores' modifiers and accuracy
+    - Compare your accuracy to top 10 to estimate improvement potential
+    - Focus on maps where you're close to medals (rank 11-20)
+  </Accordion>
+
+  <Accordion title="Improve Efficiently">
+    - Identify maps where you have low accuracy but high star rating
+    - Use the PP curve to see accuracy thresholds for meaningful gains
+    - Filter friends' scores to find maps where you can compete
+    - Focus on maps with high play counts (more competition = better reference)
+  </Accordion>
+</AccordionGroup>

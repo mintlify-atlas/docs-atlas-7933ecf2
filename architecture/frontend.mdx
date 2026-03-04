@@ -1,0 +1,435 @@
+---
+title: "Frontend Architecture"
+description: "Next.js application structure, React components, routing, and state management"
+---
+
+The ScoreSaber Reloaded frontend is a modern Next.js 16 application using the App Router architecture with React 19.
+
+## Project Structure
+
+```
+projects/website/src/
+├── app/                    # Next.js App Router
+│   ├── (overlay)/         # Overlay layout group
+│   │   └── overlay/       # OBS overlay pages
+│   ├── (pages)/           # Main site layout group
+│   │   ├── player/        # Player profile pages
+│   │   ├── leaderboard/   # Leaderboard pages
+│   │   ├── ranking/       # Global rankings
+│   │   ├── scores/        # Score listings
+│   │   └── settings/      # User settings
+│   ├── layout.tsx         # Root layout
+│   └── styles/            # Global CSS
+├── components/            # React components
+│   ├── api/              # API-related components
+│   ├── player/           # Player-specific components
+│   ├── score/            # Score display components
+│   ├── leaderboard/      # Leaderboard components
+│   ├── ui/               # Reusable UI components
+│   └── providers/        # Context providers
+├── common/               # Utilities and helpers
+│   ├── database/         # Dexie database
+│   ├── chart/            # Chart.js utilities
+│   └── player/           # Player utilities
+├── hooks/                # Custom React hooks
+└── contexts/             # React contexts
+```
+
+## Next.js Configuration
+
+From `next.config.ts`:
+
+```typescript
+const nextConfig: NextConfig = {
+  reactStrictMode: true,
+  output: "standalone",               // For Docker
+  reactCompiler: true,                // React 19 compiler
+  experimental: {
+    optimizePackageImports: [         // Package-level tree shaking
+      "@ssr/common",
+      "@tanstack/react-query",
+      "chart.js",
+      "lucide-react",
+      "zustand"
+    ]
+  },
+  images: {
+    unoptimized: true                 // Faster builds
+  }
+};
+```
+
+## Routing Strategy
+
+### Route Groups
+
+Next.js uses **route groups** to organize layouts without affecting URLs:
+
+```
+app/
+├── (overlay)/           # Minimal layout for OBS overlays
+│   └── overlay/page.tsx # URL: /overlay
+└── (pages)/             # Main site layout with navigation
+    ├── page.tsx         # URL: / (homepage)
+    ├── player/[id]/     # URL: /player/76561198449793387
+    └── ranking/         # URL: /ranking
+```
+
+### Dynamic Routes
+
+Player profiles use dynamic routing:
+
+```typescript
+// app/(pages)/player/[id]/page.tsx
+export default async function PlayerPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  
+  return <PlayerProfile playerId={id} />;
+}
+```
+
+### Catch-all Routes
+
+Rankings support optional segments:
+
+```typescript
+// app/(pages)/ranking/[[...slug]]/page.tsx
+// Matches: /ranking, /ranking/1, /ranking/global/1
+```
+
+## State Management
+
+### 1. TanStack Query (Server State)
+
+Manages all API data fetching and caching:
+
+```typescript
+// components/providers/query-provider.tsx
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 1000 * 30,           // 30 seconds
+      refetchInterval: 1000 * 60,     // 1 minute
+      refetchIntervalInBackground: false,
+      retry: true,
+      retryDelay: 1000 * 5            // 5 seconds
+    }
+  }
+});
+```
+
+**Usage example:**
+
+```typescript
+import { useQuery } from '@tanstack/react-query';
+import { ssrApi } from '@ssr/common/utils/ssr-api';
+
+function PlayerProfile({ playerId }: { playerId: string }) {
+  const { data: player, isLoading } = useQuery({
+    queryKey: ['player', playerId],
+    queryFn: () => ssrApi.getScoreSaberPlayer(playerId, 'full'),
+    staleTime: 1000 * 60 * 5  // 5 minutes
+  });
+  
+  if (isLoading) return <Loader />;
+  return <div>{player.name}</div>;
+}
+```
+
+### 2. Dexie (Client Persistence)
+
+IndexedDB wrapper for offline-first user data:
+
+```typescript
+// common/database/database.ts
+export default class Database extends Dexie {
+  settings!: EntityTable<Setting, "id">;
+  cache!: EntityTable<CacheItem, "id">;
+
+  constructor(before: number) {
+    super("ssr");
+    
+    this.version(1).stores({
+      settings: "id",
+      cache: "id"
+    });
+  }
+  
+  // Get main player from IndexedDB
+  async getMainPlayer(): Promise<ScoreSaberPlayer | undefined> {
+    const id = await this.getMainPlayerId();
+    if (!id) return undefined;
+    
+    // Check cache (6 hour TTL)
+    return this.getCache<ScoreSaberPlayer>(
+      `player:${id}`,
+      DEFAULT_PLAYER_CACHE_TTL,
+      async () => {
+        return await ssrApi.getScoreSaberPlayer(id, "basic");
+      }
+    );
+  }
+}
+```
+
+**Settings stored in Dexie:**
+- Main player ID
+- Friends list
+- Background preferences
+- Overlay settings
+- Chart legend states
+
+### 3. Zustand (Global State)
+
+Lightweight state management for UI state:
+
+```typescript
+import { create } from 'zustand';
+
+interface AppState {
+  sidebarOpen: boolean;
+  toggleSidebar: () => void;
+}
+
+export const useAppStore = create<AppState>((set) => ({
+  sidebarOpen: false,
+  toggleSidebar: () => set((state) => ({ 
+    sidebarOpen: !state.sidebarOpen 
+  }))
+}));
+```
+
+### 4. React Context
+
+For component-tree scoped state:
+
+```typescript
+// contexts/viewport-context.tsx
+export const ViewportProvider = ({ children }: { children: ReactNode }) => {
+  const [isMobile, setIsMobile] = useState(false);
+  
+  useEffect(() => {
+    const checkViewport = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkViewport();
+    window.addEventListener('resize', checkViewport);
+    return () => window.removeEventListener('resize', checkViewport);
+  }, []);
+  
+  return (
+    <ViewportContext.Provider value={{ isMobile }}>
+      {children}
+    </ViewportContext.Provider>
+  );
+};
+```
+
+## Component Architecture
+
+### Root Layout
+
+```typescript
+// app/layout.tsx
+export default function RootLayout({ children }: { children: ReactNode }) {
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${siteFont.className} h-full w-full antialiased`}>
+        <Toaster />
+        <PreloadResources />
+        <LazyMotion features={domAnimation} strict>
+          <PageTransitionProvider>
+            <ViewportProvider>
+              <QueryProvider>
+                {children}
+              </QueryProvider>
+            </ViewportProvider>
+          </PageTransitionProvider>
+        </LazyMotion>
+      </body>
+    </html>
+  );
+}
+```
+
+**Provider hierarchy:**
+1. **LazyMotion**: Lazy-loads Framer Motion features
+2. **PageTransitionProvider**: Smooth page transitions
+3. **ViewportProvider**: Responsive breakpoint detection
+4. **QueryProvider**: TanStack Query client
+
+### Custom Hooks
+
+Reusable logic extraction:
+
+```typescript
+// hooks/use-database.ts
+import { getDatabase } from '@/common/database/database';
+
+export function useDatabase() {
+  return getDatabase();
+}
+```
+
+```typescript
+// hooks/use-background-cover.ts
+export function useBackgroundCover() {
+  const db = useDatabase();
+  const [cover, setCover] = useState<string>("");
+  
+  useEffect(() => {
+    db.getBackgroundCover().then(setCover);
+  }, [db]);
+  
+  const updateCover = async (newCover: string) => {
+    await db.setBackgroundCover(newCover);
+    setCover(newCover);
+  };
+  
+  return { cover, updateCover };
+}
+```
+
+## API Integration
+
+All API calls go through the shared `@ssr/common` package:
+
+```typescript
+// From @ssr/common/utils/ssr-api
+export const ssrApi = {
+  async getScoreSaberPlayer(id: string, type: DetailType) {
+    const response = await axios.get(
+      `${env.NEXT_PUBLIC_API_URL}/player/${id}`,
+      { params: { type } }
+    );
+    return response.data;
+  },
+  
+  async getPlayerScores(id: string, page: number) {
+    const response = await axios.get(
+      `${env.NEXT_PUBLIC_API_URL}/player/${id}/scores`,
+      { params: { page } }
+    );
+    return response.data;
+  }
+};
+```
+
+## Real-time Features
+
+### WebSocket Integration
+
+```typescript
+import useWebSocket from 'react-use-websocket';
+
+function LiveScores() {
+  const { lastMessage } = useWebSocket('wss://api.ssr.fascinated.cc/scores/live', {
+    onMessage: (event) => {
+      const score = JSON.parse(event.data);
+      console.log('New score:', score);
+    },
+    shouldReconnect: () => true
+  });
+  
+  return <ScoreList scores={scores} />;
+}
+```
+
+## Performance Optimizations
+
+### 1. React Compiler
+
+Automatic memoization eliminates manual `useMemo`/`useCallback`:
+
+```typescript
+// Automatically optimized by React Compiler
+function ExpensiveComponent({ data }) {
+  const processed = processData(data);  // Auto-memoized
+  return <Display data={processed} />;
+}
+```
+
+### 2. Code Splitting
+
+Dynamic imports for heavy components:
+
+```typescript
+import dynamic from 'next/dynamic';
+
+const HeavyChart = dynamic(
+  () => import('@/components/charts/heavy-chart'),
+  { ssr: false, loading: () => <Loader /> }
+);
+```
+
+### 3. Image Optimization
+
+```typescript
+import Image from 'next/image';
+
+<Image
+  src={player.avatar}
+  alt={player.name}
+  width={128}
+  height={128}
+  priority={true}  // LCP optimization
+/>
+```
+
+## Styling
+
+### Tailwind CSS
+
+Utility-first styling with v4:
+
+```tsx
+<div className="flex items-center gap-4 rounded-lg bg-card p-4 shadow-md">
+  <Avatar src={player.avatar} />
+  <div>
+    <h2 className="text-xl font-bold">{player.name}</h2>
+    <p className="text-muted-foreground">Rank #{player.rank}</p>
+  </div>
+</div>
+```
+
+### Radix UI Components
+
+Accessible primitives with custom styling:
+
+```typescript
+import * as Dialog from '@radix-ui/react-dialog';
+
+function SettingsModal() {
+  return (
+    <Dialog.Root>
+      <Dialog.Trigger>Settings</Dialog.Trigger>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/50" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 ...">
+          <SettingsForm />
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+  );
+}
+```
+
+## Build Output
+
+Standalone build for Docker:
+
+```bash
+npm run build
+
+# Produces:
+.next/standalone/        # Minimal Node.js server
+.next/static/           # Static assets
+public/                 # Public files
+```
+
+This creates a self-contained application with all dependencies bundled.

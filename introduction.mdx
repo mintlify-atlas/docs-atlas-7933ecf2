@@ -1,0 +1,229 @@
+---
+title: Welcome to ScoreSaber Reloaded
+description: A modern web application to view your Beat Saber scores and get detailed stats about your plays
+mode: custom
+---
+
+<div className="relative overflow-hidden dark:bg-[#0d0b0b] bg-white py-20">
+  <div className="absolute inset-0 bg-gradient-to-br from-[#f3d520]/10 via-transparent to-[#5a6fff]/10" />
+  
+  <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
+    <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <div className="lg:col-span-7">
+        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold dark:text-white text-gray-900 mb-6">
+          Track your Beat Saber scores like never before
+        </h1>
+        
+        <p className="text-lg sm:text-xl dark:text-gray-300 text-gray-600 max-w-2xl mb-8">
+          ScoreSaber Reloaded brings you advanced analytics, real-time tracking, and comprehensive statistics for your Beat Saber performance.
+        </p>
+        
+        <div className="flex flex-wrap gap-4">
+          <a 
+            href="/quickstart"
+            className="inline-flex items-center px-6 py-3 rounded-lg font-semibold text-white transition-all"
+            style={{ background: 'linear-gradient(90deg, #2a6fff 0%, #9b4dff 100%)' }}
+          >
+            Get started
+            <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </a>
+          
+          <a 
+            href="/api/overview"
+            className="inline-flex items-center px-6 py-3 rounded-lg font-semibold dark:text-white text-gray-900 border dark:border-white/20 border-gray-300 dark:bg-white/10 bg-transparent dark:hover:bg-white/20 hover:bg-gray-50 transition-all"
+          >
+            Explore API
+          </a>
+        </div>
+      </div>
+      
+      <div className="lg:col-span-5 hidden lg:block">
+        <div className="relative">
+          <div className="absolute inset-0 dark:bg-gradient-to-r from-[#f3d520]/20 to-[#5a6fff]/20 rounded-2xl blur-3xl" />
+          <img 
+            src="https://media.brand.dev/6f6ba820-2d91-42ac-9a8a-d3ab7727acd4.png" 
+            alt="ScoreSaber Reloaded Logo" 
+            noZoom
+            className="relative w-full h-auto max-w-md mx-auto"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-bold dark:text-white text-gray-900 mb-4">
+    Get started in minutes
+  </h2>
+  <p className="text-base dark:text-gray-400 text-gray-600 mb-8">
+    Follow these steps to start tracking your Beat Saber performance
+  </p>
+  
+  <Steps>
+    <Step title="Visit the website">
+      Go to [ssr.fascinated.cc](https://ssr.fascinated.cc) to access ScoreSaber Reloaded.
+    </Step>
+    
+    <Step title="Search for your profile">
+      Enter your ScoreSaber player ID or username in the search bar to find your profile.
+      
+      <Note>
+        You can find your ScoreSaber ID by visiting your profile on [ScoreSaber.com](https://scoresaber.com) - it's the number in your profile URL.
+      </Note>
+    </Step>
+    
+    <Step title="Explore your stats">
+      View your detailed statistics including:
+      - Score history and performance charts
+      - PP breakdown and accuracy metrics
+      - Rank progression over time
+      - Medal achievements
+      - Leaderboard positions
+    </Step>
+    
+    <Step title="Track your progress">
+      Bookmark your profile page or add it to your favorites to easily track your improvement over time.
+      
+      <Tip>
+        Enable Discord notifications to get real-time updates when your rank changes or you achieve new medals.
+      </Tip>
+    </Step>
+  </Steps>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-bold dark:text-white text-gray-900 mb-4">
+    Explore features
+  </h2>
+  <p className="text-base dark:text-gray-400 text-gray-600 mb-8">
+    Discover what makes ScoreSaber Reloaded the ultimate Beat Saber companion
+  </p>
+  
+  <CardGroup cols={3}>
+    <Card title="Player profiles" icon="user" href="/features/player-profiles">
+      View comprehensive player statistics, rank history, and performance metrics
+    </Card>
+    
+    <Card title="Score tracking" icon="chart-line" href="/features/score-tracking">
+      Track all your scores with detailed analytics and historical trends
+    </Card>
+    
+    <Card title="Leaderboards" icon="trophy" href="/features/leaderboards">
+      Browse global and country leaderboards with advanced filtering
+    </Card>
+    
+    <Card title="Statistics" icon="chart-bar" href="/features/statistics">
+      Deep dive into your performance with advanced statistical analysis
+    </Card>
+    
+    <Card title="Medals" icon="medal" href="/features/medals">
+      Earn and track achievement medals for your accomplishments
+    </Card>
+    
+    <Card title="Playlists" icon="list" href="/features/playlists">
+      Create and manage custom song playlists for your gameplay
+    </Card>
+  </CardGroup>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-bold dark:text-white text-gray-900 mb-4">
+    Powerful integrations
+  </h2>
+  <p className="text-base dark:text-gray-400 text-gray-600 mb-8">
+    Connect with your favorite Beat Saber platforms
+  </p>
+  
+  <CardGroup cols={2}>
+    <Card title="ScoreSaber" icon="gamepad" href="/integrations/scoresaber">
+      Primary integration with ScoreSaber for official ranked scores
+    </Card>
+    
+    <Card title="BeatLeader" icon="crown" href="/integrations/beatleader">
+      Alternative leaderboard system with additional metrics
+    </Card>
+    
+    <Card title="BeatSaver" icon="download" href="/integrations/beatsaver">
+      Access custom maps and leaderboard information
+    </Card>
+    
+    <Card title="Discord" icon="discord" href="/integrations/discord">
+      Get notifications and track stats directly in Discord
+    </Card>
+  </CardGroup>
+</div>
+
+<div className="mt-16 mb-16 max-w-5xl mx-auto px-6">
+  <h2 className="text-2xl sm:text-3xl font-bold dark:text-white text-gray-900 mb-4">
+    Developer resources
+  </h2>
+  <p className="text-base dark:text-gray-400 text-gray-600 mb-8">
+    Build on top of ScoreSaber Reloaded with our API
+  </p>
+  
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <a 
+      href="/api/overview"
+      className="group block rounded-2xl border dark:border-[#27272a] border-gray-200 overflow-hidden no-underline dark:hover:border-[#f3d520] hover:border-[#f3d520] transition-colors"
+    >
+      <div className="p-6">
+        <h3 className="text-lg font-semibold dark:text-white text-gray-900 mb-2">
+          API documentation
+        </h3>
+        <p className="text-sm dark:text-gray-400 text-gray-600 mb-4">
+          Complete REST API reference with examples and authentication guides
+        </p>
+        <div className="flex items-center text-sm font-medium dark:text-gray-300 text-gray-700 dark:group-hover:text-[#f3d520] group-hover:text-[#f3d520] transition-colors">
+          Read the docs
+          <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </a>
+    
+    <a 
+      href="/architecture/overview"
+      className="group block rounded-2xl border dark:border-[#27272a] border-gray-200 overflow-hidden no-underline dark:hover:border-[#f3d520] hover:border-[#f3d520] transition-colors"
+    >
+      <div className="p-6">
+        <h3 className="text-lg font-semibold dark:text-white text-gray-900 mb-2">
+          Architecture guide
+        </h3>
+        <p className="text-sm dark:text-gray-400 text-gray-600 mb-4">
+          Learn about the technical stack and system architecture
+        </p>
+        <div className="flex items-center text-sm font-medium dark:text-gray-300 text-gray-700 dark:group-hover:text-[#f3d520] group-hover:text-[#f3d520] transition-colors">
+          Explore architecture
+          <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+
+<div className="mt-20 mb-16 max-w-5xl mx-auto px-6">
+  <div className="rounded-2xl border dark:border-[#27272a] border-gray-200 dark:bg-[#0a0a0a] bg-gray-50 p-8 sm:p-12">
+    <h2 className="text-2xl sm:text-3xl font-bold dark:text-white text-gray-900 mb-4">
+      Ready to track your progress?
+    </h2>
+    <p className="text-base dark:text-gray-400 text-gray-600 mb-6 max-w-2xl">
+      Join thousands of Beat Saber players using ScoreSaber Reloaded to analyze their performance and climb the leaderboards.
+    </p>
+    <a 
+      href="/quickstart"
+      className="inline-flex items-center px-6 py-3 rounded-lg font-semibold text-white transition-all"
+      style={{ background: 'linear-gradient(90deg, #2a6fff 0%, #9b4dff 100%)' }}
+    >
+      Get started now
+      <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+      </svg>
+    </a>
+  </div>
+</div>

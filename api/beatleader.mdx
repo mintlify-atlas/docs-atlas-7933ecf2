@@ -1,0 +1,100 @@
+---
+title: "BeatLeader Endpoints"
+description: "API endpoints for retrieving BeatLeader score statistics and replay files"
+---
+
+## Get BeatLeader Score Stats
+
+`GET /beatleader/scorestats/:scoreId`
+
+Fetch detailed score statistics from BeatLeader for a specific score.
+
+<ParamField path="scoreId" type="number" required>
+  The score ID
+</ParamField>
+
+<ResponseField name="stats" type="object">
+  Comprehensive score statistics from BeatLeader including accuracy breakdown, hand stats, and timing analysis
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/beatleader/scorestats/123456789
+```
+
+### Example Response
+
+```json
+{
+  "scoreId": 123456789,
+  "accLeft": 95.5,
+  "accRight": 96.2,
+  "leftAverageScore": 113.5,
+  "rightAverageScore": 114.2,
+  "leftTimeDependence": 0.15,
+  "rightTimeDependence": 0.12,
+  "leftPreswing": 85.3,
+  "rightPreswing": 87.1,
+  "leftPostswing": 28.2,
+  "rightPostswing": 27.1,
+  "leftSpeed": 3.5,
+  "rightSpeed": 3.6,
+  "maxStreak": 250,
+  "pauses": 0,
+  "wallsHit": 0,
+  "bombsHit": 0,
+  "missedNotes": 5,
+  "badCuts": 2,
+  "handMovement": 12345.67,
+  "fcAccuracy": 96.5,
+  "fcPp": 265.5
+}
+```
+
+---
+
+## Get BeatLeader Replay
+
+`GET /beatleader/replay/:scoreId`
+
+Redirect to the raw BeatLeader replay file for download.
+
+<ParamField path="scoreId" type="string" required>
+  The score ID with `.bsor` extension (e.g., `123456789.bsor`)
+</ParamField>
+
+<ResponseField name="redirect" type="string">
+  HTTP 302 redirect to the BeatLeader replay file URL
+</ResponseField>
+
+### Example Request
+
+```bash
+curl -L https://api.scoresaber.com/beatleader/replay/123456789.bsor
+```
+
+### Response
+
+This endpoint returns an HTTP 302 redirect to the actual replay file hosted on BeatLeader's CDN. The replay file will be in `.bsor` format, which can be opened in Beat Saber replay viewers.
+
+### Usage Example
+
+```bash
+# Download the replay file
+curl -L https://api.scoresaber.com/beatleader/replay/123456789.bsor -o replay.bsor
+
+# Or open directly in browser
+open https://api.scoresaber.com/beatleader/replay/123456789.bsor
+```
+
+### Error Response
+
+If the replay is not found:
+
+```json
+{
+  "error": "Not Found",
+  "message": "Replay not found for score \"123456789.bsor\""
+}
+```

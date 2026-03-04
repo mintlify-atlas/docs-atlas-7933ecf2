@@ -1,0 +1,456 @@
+---
+title: Playlists
+description: Generate custom Beat Saber playlists including snipe playlists and ranked map collections for ScoreSaber Reloaded.
+---
+
+## Overview
+
+ScoreSaber Reloaded provides powerful playlist generation tools to create custom Beat Saber map collections. Generate playlists for competitive play, skill improvement, or personal practice directly from the platform.
+
+<CardGroup cols={2}>
+  <Card title="Snipe Playlists" icon="crosshairs">
+    Create competitive playlists to challenge specific players
+  </Card>
+  <Card title="Custom Ranked Playlists" icon="list">
+    Generate playlists of ranked maps filtered by difficulty and criteria
+  </Card>
+  <Card title="Auto-Download" icon="download">
+    One-click download in .bplist format for Beat Saber mods
+  </Card>
+  <Card title="Advanced Filtering" icon="filter">
+    Granular control over map selection criteria
+  </Card>
+</CardGroup>
+
+## Playlist Formats
+
+All playlists are generated in standard BeatSaber playlist format (.bplist):
+
+- Compatible with PlaylistManager mod
+- Compatible with BeatList mod
+- Compatible with in-game playlist system
+- JSON-based format for custom parsing
+
+<Note>
+  Playlists contain map metadata and BSR codes. You'll need a mod like PlaylistManager to auto-download maps from the playlist.
+</Note>
+
+## Snipe Playlists
+
+Create competitive playlists to challenge other players:
+
+### What is a Snipe Playlist?
+
+A snipe playlist contains maps where:
+
+1. Both you and a target player have set scores
+2. Their score is better than yours (or you want to compete)
+3. Maps are filtered by your specified criteria
+4. Sorted to prioritize the most valuable improvements
+
+<Tip>
+  Snipe playlists are the fastest way to focus your practice on directly competitive maps.
+</Tip>
+
+### Creating a Snipe Playlist
+
+<Accordion title="Step-by-Step Guide">
+  1. Navigate to the profile of the player you want to challenge
+  2. Click the **crosshair/target icon** in the profile header actions
+  3. The Snipe Playlist Creator dialog opens
+  4. Configure your playlist settings (see below)
+  5. Click "Download Playlist"
+  6. Save the .bplist file
+  7. Import into Beat Saber using PlaylistManager mod
+</Accordion>
+
+### Snipe Playlist Configuration
+
+Customize your snipe playlist with these settings:
+
+#### Sort Options
+
+Choose how maps are ordered in the playlist:
+
+<CardGroup cols={2}>
+  <Card title="PP" icon="trophy">
+    Sort by potential PP gain (ranked maps only)
+  </Card>
+  <Card title="Date" icon="clock">
+    Sort by when their score was set (recent first)
+  </Card>
+  <Card title="Accuracy" icon="target">
+    Sort by accuracy difference (biggest gaps first)
+  </Card>
+  <Card title="Score" icon="hashtag">
+    Sort by raw score difference
+  </Card>
+  <Card title="Misses" icon="x">
+    Sort by miss count difference
+  </Card>
+  <Card title="Max Combo" icon="link">
+    Sort by combo difference
+  </Card>
+</CardGroup>
+
+Each sort can be **ascending** or **descending** (toggle with arrow buttons).
+
+#### Score Type Filter
+
+<Accordion title="Score Type Options">
+  - **All Scores** - Include both ranked and unranked maps
+  - **Ranked Only** - Only maps that award PP
+  - **Unranked Only** - Only unranked maps (no PP)
+</Accordion>
+
+<Note>
+  When selecting "Ranked Only", additional star range filtering becomes available.
+</Note>
+
+#### Star Range (Ranked Only)
+
+Filter ranked maps by difficulty:
+
+- **Minimum Stars** - Lower bound (0-12+ stars)
+- **Maximum Stars** - Upper bound (0-12+ stars)
+- Drag the dual-range slider to select your range
+- Values display above the slider handles
+
+<Tip>
+  Focus on a 2-3 star range matching your skill level for efficient improvement (e.g., 5-8 stars for advanced players).
+</Tip>
+
+#### Accuracy Range
+
+Filter maps by the target player's accuracy:
+
+- **Minimum Accuracy** - Lower bound (0-100%)
+- **Maximum Accuracy** - Upper bound (0-100%)
+- Drag the dual-range slider to select your range
+- Useful for targeting maps they didn't FC or played poorly
+
+**Example Use Cases:**
+- **90-95% Range** - Find maps where they have room for improvement
+- **95-100% Range** - Challenge their best performances
+- **Below 90% Range** - Target maps they struggled with
+
+#### Require Both Scores
+
+Toggle whether both players must have scores:
+
+- **Enabled** - Only include maps where both you and target player have scores
+- **Disabled** - Include maps where only the target player has scores
+
+<Accordion title="When to Use Each Setting">
+  **Enable "Require Both Scores" when:**
+  - You want direct head-to-head comparison
+  - Focusing on improving existing scores
+  - Competing on familiar maps
+
+  **Disable "Require Both Scores" when:**
+  - You want to play maps they've completed but you haven't
+  - Expanding your map pool
+  - Discovering new challenging maps
+</Accordion>
+
+### Snipe Playlist File Naming
+
+Playlists are auto-named based on settings:
+
+```
+ssr-snipe-{playerId}-{scoreType}-{starRange}-{accuracyRange}-{sort}-{direction}.bplist
+```
+
+**Example:**
+```
+ssr-snipe-76561198084059854-ranked-only-5-8⭐-90-100%-pp-desc.bplist
+```
+
+### Using Snipe Playlists
+
+<Accordion title="Importing into Beat Saber">
+  1. Ensure you have PlaylistManager mod installed
+  2. Place the .bplist file in `Beat Saber/Playlists/` folder
+  3. Launch Beat Saber
+  4. Navigate to the playlist in the song selection menu
+  5. Use PlaylistManager to bulk download missing maps
+  6. Start competing!
+</Accordion>
+
+<Tip>
+  Update your snipe playlist weekly to track your progress and add new maps the target player completes.
+</Tip>
+
+## Custom Ranked Playlists
+
+Generate playlists of ranked maps with custom filters:
+
+### Creating Custom Ranked Playlists
+
+```http
+GET /playlist/scoresaber-custom-ranked-maps?config={encoded_config}
+```
+
+**Configuration Parameters:**
+- `minStars` / `maxStars` - Star rating range
+- `minPP` / `maxPP` - PP range filter
+- `category` - Map category (speed, tech, acc, etc.)
+- `sortBy` - Sort field (stars, pp, date, plays)
+- `limit` - Maximum number of maps (default: 50)
+
+### Use Cases
+
+<AccordionGroup>
+  <Accordion title="Skill Level Training">
+    Create playlists focused on your skill level:
+    - Beginner: 2-4 stars
+    - Intermediate: 4-6 stars
+    - Advanced: 6-8 stars
+    - Expert: 8-10 stars
+    - Master: 10+ stars
+  </Accordion>
+
+  <Accordion title="PP Farming">
+    Generate optimal PP farming playlists:
+    - Filter by PP value (200-400 PP range)
+    - Sort by PP descending
+    - Focus on your comfortable star range
+    - Limit to 20-30 maps for focused practice
+  </Accordion>
+
+  <Accordion title="Map Style Practice">
+    Filter by map characteristics:
+    - Speed maps (fast BPM, simple patterns)
+    - Tech maps (complex patterns, precision)
+    - Accuracy maps (slow, precise movements)
+    - Stamina maps (long duration, sustained energy)
+  </Accordion>
+</AccordionGroup>
+
+## Playlist API Endpoints
+
+Developers can programmatically generate playlists:
+
+### Get Snipe Playlist
+
+```http
+GET /playlist/snipe?user={yourPlayerId}&toSnipe={targetPlayerId}&settings={encodedSettings}
+```
+
+**Parameters:**
+- `user` (string) - Your player ID (ScoreSaber ID)
+- `toSnipe` (string) - Target player ID to compete against
+- `settings` (string) - Base64-encoded JSON configuration
+
+**Settings Schema:**
+```json
+{
+  "sort": "pp",
+  "sortDirection": "desc",
+  "rankedStatus": "ranked",
+  "starRange": { "min": 5, "max": 8 },
+  "accuracyRange": { "min": 90, "max": 100 },
+  "requireBothScores": true
+}
+```
+
+### Get Custom Ranked Playlist
+
+```http
+GET /playlist/scoresaber-custom-ranked-maps?config={encodedConfig}
+```
+
+**Config Schema:**
+```json
+{
+  "minStars": 5,
+  "maxStars": 8,
+  "category": "speed",
+  "sortBy": "pp",
+  "limit": 50
+}
+```
+
+### Get Playlist by ID
+
+```http
+GET /playlist/{playlistId}
+```
+
+Retrieve previously generated playlists (if stored).
+
+<Note>
+  All playlist endpoints return .bplist format (JSON). Set `Accept: application/json` header to receive raw JSON data.
+</Note>
+
+## Playlist Response Format
+
+Playlists follow the Beat Saber playlist schema:
+
+```json
+{
+  "playlistTitle": "SSR Snipe Playlist",
+  "playlistAuthor": "ScoreSaber Reloaded",
+  "playlistDescription": "Competitive maps to snipe...",
+  "image": "base64_encoded_image",
+  "songs": [
+    {
+      "hash": "map_hash",
+      "songName": "Song Title",
+      "levelAuthorName": "Mapper",
+      "difficulties": [
+        {
+          "characteristic": "Standard",
+          "name": "ExpertPlus"
+        }
+      ]
+    }
+  ]
+}
+```
+
+## Playlist Management Tips
+
+<AccordionGroup>
+  <Accordion title="Organize Your Playlists">
+    - Use descriptive names for easy identification
+    - Create separate playlists by skill level
+    - Maintain a "current focus" playlist of 10-15 maps
+    - Archive completed playlists for progress tracking
+  </Accordion>
+
+  <Accordion title="Update Regularly">
+    - Regenerate snipe playlists weekly to include new scores
+    - Update custom ranked playlists when new maps are ranked
+    - Remove maps you've mastered to keep playlists focused
+    - Track your completion rate on each playlist
+  </Accordion>
+
+  <Accordion title="Playlist Strategies">
+    - Start sessions with easier maps (warm-up)
+    - Place highest-priority maps in the middle (peak performance)
+    - End with fun or familiar maps (cool-down)
+    - Limit playlist size to 20-30 maps for focused sessions
+  </Accordion>
+</AccordionGroup>
+
+## Advanced Playlist Features
+
+### Playlist Sharing
+
+Share your playlists with others:
+
+- **Direct File Sharing** - Send .bplist files
+- **URL Sharing** - Share the API endpoint URL
+- **Community Playlists** (future) - Public playlist repository
+- **Playlist Codes** (future) - Short codes for quick access
+
+### Playlist Analytics
+
+Track playlist progress:
+
+- **Completion Rate** - Percentage of maps played
+- **Average Accuracy** - Mean accuracy across playlist maps
+- **PP Earned** - Total PP gained from playlist
+- **Time Invested** - Total playtime on playlist maps
+
+<Note>
+  Analytics features require playlist tracking integration (future enhancement).
+</Note>
+
+### Dynamic Playlists
+
+Auto-updating playlists based on criteria:
+
+- **Daily Challenge Playlist** - New maps every day
+- **Weekly Rotation** - Curated selection updated weekly
+- **Personal Improvement** - Auto-generated based on your weaknesses
+- **Trending Maps** - Most played maps this week
+
+<Tip>
+  Dynamic playlists are planned for future updates. Subscribe to notifications for launch announcements.
+</Tip>
+
+## Playlist Integration with Mods
+
+Compatibility with popular Beat Saber mods:
+
+### PlaylistManager
+
+- One-click download of all playlist maps
+- Auto-sync with BeatSaver
+- Playlist organization and management
+- Progress tracking per playlist
+
+### BeatList
+
+- Cross-platform playlist management
+- Cloud sync across devices
+- Advanced filtering and sorting
+- Playlist curation tools
+
+### SongBrowser
+
+- In-game playlist browsing
+- Quick access to playlist maps
+- Integration with song search
+- Playlist-based song filtering
+
+<Note>
+  Mod compatibility depends on mod versions and Beat Saber version. Ensure your mods are up-to-date.
+</Note>
+
+## Troubleshooting Playlists
+
+<AccordionGroup>
+  <Accordion title="Playlist Won't Load in Game">
+    - Verify the .bplist file is in `Beat Saber/Playlists/` folder
+    - Check file format is valid JSON
+    - Ensure PlaylistManager mod is installed and enabled
+    - Try re-downloading the playlist
+    - Check Beat Saber and mod versions are compatible
+  </Accordion>
+
+  <Accordion title="Maps Won't Download">
+    - Ensure you have internet connection
+    - Check BeatSaver is accessible (not down)
+    - Verify PlaylistManager mod is functioning
+    - Try downloading maps manually from BeatSaver
+    - Check available disk space
+  </Accordion>
+
+  <Accordion title="Snipe Playlist is Empty">
+    - Verify both players have scores on overlapping maps
+    - Try widening star range or accuracy range filters
+    - Disable "Require Both Scores" to include more maps
+    - Check if the target player has public scores
+  </Accordion>
+</AccordionGroup>
+
+## Best Practices
+
+<AccordionGroup>
+  <Accordion title="Effective Playlist Use">
+    - Focus on one playlist at a time
+    - Set clear goals for each playlist (PP target, skill practice)
+    - Review playlist weekly and regenerate as needed
+    - Balance difficulty - include easier maps for confidence
+    - Track your progress and completion rate
+  </Accordion>
+
+  <Accordion title="Competitive Playlists">
+    - Update snipe playlists bi-weekly
+    - Focus on PP-sorted playlists for efficient gains
+    - Compare accuracy to identify improvement areas
+    - Challenge multiple players with different playlists
+    - Use playlists for tournament preparation
+  </Accordion>
+
+  <Accordion title="Practice Playlists">
+    - Create skill-specific playlists (speed, acc, tech)
+    - Gradually increase difficulty over weeks
+    - Include warmup and cooldown maps
+    - Mix ranked and unranked for variety
+    - Replay playlists to track improvement
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,536 @@
+---
+title: "Backend Architecture"
+description: "Elysia API server structure, controllers, services, and WebSocket integration"
+---
+
+The ScoreSaber Reloaded backend is built with **Elysia**, a high-performance web framework running on **Bun**, providing REST APIs, WebSocket connections, and scheduled tasks.
+
+## Project Structure
+
+```
+projects/backend/src/
+├── index.ts              # Application entry point
+├── controller/           # API route handlers
+│   ├── player.controller.ts
+│   ├── leaderboard.controller.ts
+│   ├── scores.controller.ts
+│   └── ...
+├── service/              # Business logic
+│   ├── player/
+│   │   ├── player-core.service.ts
+│   │   ├── player-scores.service.ts
+│   │   └── player-history.service.ts
+│   ├── leaderboard/
+│   ├── cache.service.ts
+│   └── ...
+├── websocket/            # WebSocket handlers
+│   ├── score-websockets.ts
+│   └── beatsaver-websocket.ts
+├── event/                # Event system
+│   ├── event-listener.ts
+│   └── events-manager.ts
+├── metrics/              # Prometheus metrics
+├── queue/                # Background job processing
+├── bot/                  # Discord bot integration
+└── common/               # Utilities and helpers
+```
+
+## Application Bootstrap
+
+From `index.ts`:
+
+```typescript
+import { Elysia } from "elysia";
+import cors from "@elysiajs/cors";
+import { cron } from "@elysiajs/cron";
+import { openapi } from "@elysiajs/openapi";
+import { helmet } from "elysia-helmet";
+import { mongoose } from "@typegoose/typegoose";
+import Redis from "ioredis";
+
+// Connect to MongoDB
+await mongoose.connect(env.MONGO_CONNECTION_STRING);
+
+// Connect to Redis
+export const redisClient = new Redis(env.REDIS_URL);
+
+// Initialize Elysia app
+export const app = new Elysia()
+  .use(openapi({                    // API documentation
+    path: "/swagger",
+    documentation: {
+      info: {
+        title: "SSR Backend",
+        description: "The API for ScoreSaber Reloaded!"
+      }
+    }
+  }))
+  .use(cors())                      // CORS middleware
+  .use(helmet())                    // Security headers
+  .use(metricsPlugin())            // Prometheus metrics
+  .use(PlayerController)           // Mount controllers
+  .use(ScoresController)
+  .use(LeaderboardController);
+
+app.listen({ port: 8080 });
+```
+
+## Controller Layer
+
+Controllers define API routes and validation:
+
+```typescript
+// controller/player.controller.ts
+import { Elysia } from "elysia";
+import { z } from "zod";
+
+export default function playerController(app: Elysia) {
+  return app.group("/player", app =>
+    app
+      .get(
+        "/:playerId",
+        async ({ params: { playerId }, query: { type } }) => {
+          return ScoreSaberService.getPlayer(playerId, type);
+        },
+        {
+          tags: ["Player"],
+          params: z.object({
+            playerId: z.string()
+          }),
+          query: z.object({
+            type: z.optional(DetailTypeSchema)
+          }),
+          detail: {
+            description: "Fetch ScoreSaber player profile"
+          }
+        }
+      )
+      .get(
+        "/refresh/:playerId",
+        async ({ params: { playerId } }) => {
+          return PlayerCoreService.refreshPlayer(playerId);
+        },
+        {
+          tags: ["Player"],
+          params: z.object({
+            playerId: z.string()
+          }),
+          detail: {
+            description: "Refresh player data from ScoreSaber"
+          }
+        }
+      )
+      .get(
+        "/history/:playerId",
+        async ({ params: { playerId }, query: { startDate, endDate } }) => {
+          const player = await ScoreSaberApiService.lookupPlayer(playerId);
+          if (!player) {
+            throw new NotFoundError(`Player "${playerId}" not found`);
+          }
+          return await PlayerHistoryService.getPlayerStatisticHistories(
+            player,
+            new Date(startDate),
+            new Date(endDate)
+          );
+        },
+        {
+          tags: ["Player"],
+          params: z.object({
+            playerId: z.string()
+          }),
+          query: z.object({
+            startDate: z.string().default(new Date().toISOString()),
+            endDate: z.string().default(getDaysAgoDate(50).toISOString())
+          }),
+          detail: {
+            description: "Fetch player statistics history"
+          }
+        }
+      )
+  );
+}
+```
+
+**Key features:**
+- **Type-safe**: Zod schemas validate inputs
+- **Auto-documented**: OpenAPI specs generated automatically
+- **Grouped routes**: Logical organization with `.group()`
+
+## Service Layer
+
+Services contain business logic and data access:
+
+```typescript
+// service/player/player-core.service.ts
+export class PlayerCoreService {
+  /**
+   * Creates a new player in the database if they don't exist
+   */
+  static async createPlayer(playerId: string): Promise<boolean> {
+    const exists = await PlayerModel.exists({ _id: playerId });
+    if (exists) return false;
+    
+    const player = await ScoreSaberApiService.lookupPlayer(playerId);
+    if (!player) {
+      throw new NotFoundError(`Player ${playerId} not found`);
+    }
+    
+    await PlayerModel.create({
+      _id: playerId,
+      name: player.name,
+      country: player.country,
+      pp: player.pp,
+      joinedDate: player.firstSeen
+    });
+    
+    return true;
+  }
+  
+  /**
+   * Refreshes player data from ScoreSaber API
+   */
+  static async refreshPlayer(playerId: string): Promise<ScoreSaberPlayer> {
+    // Invalidate cache
+    await CacheService.invalidate(`player:${playerId}`);
+    
+    // Fetch fresh data
+    const player = await ScoreSaberApiService.lookupPlayer(playerId);
+    if (!player) {
+      throw new NotFoundError(`Player ${playerId} not found`);
+    }
+    
+    // Update database
+    await PlayerModel.updateOne(
+      { _id: playerId },
+      { name: player.name, pp: player.pp, country: player.country }
+    );
+    
+    return player;
+  }
+}
+```
+
+## Caching Strategy
+
+Redis caching with automatic serialization:
+
+```typescript
+// service/cache.service.ts
+export enum CacheId {
+  BeatSaver = "beatSaver",
+  ScoreSaber = "scoresaber",
+  Players = "players",
+  Leaderboards = "leaderboards"
+}
+
+export default class CacheService {
+  public static readonly CACHE_EXPIRY = {
+    [CacheId.BeatSaver]: TimeUnit.toSeconds(TimeUnit.Day, 7),
+    [CacheId.ScoreSaber]: TimeUnit.toSeconds(TimeUnit.Minute, 2),
+    [CacheId.Players]: TimeUnit.toSeconds(TimeUnit.Minute, 30),
+    [CacheId.Leaderboards]: TimeUnit.toSeconds(TimeUnit.Hour, 2)
+  };
+
+  public static async fetchWithCache<T>(
+    cache: CacheId,
+    cacheKey: string,
+    fetchFn: () => Promise<T>
+  ): Promise<T> {
+    // Skip cache in development
+    if (!isProduction()) {
+      return fetchFn();
+    }
+
+    // Check cache
+    const cachedData = await redisClient.get(cacheKey);
+    if (cachedData) {
+      return parse(cachedData) as T;  // devalue deserialization
+    }
+
+    // Cache miss - fetch fresh data
+    const data = await fetchFn();
+    if (data) {
+      await redisClient.set(
+        cacheKey,
+        stringify(data),              // devalue serialization
+        "EX",
+        this.CACHE_EXPIRY[cache]
+      );
+    }
+
+    return data;
+  }
+}
+```
+
+**Usage example:**
+
+```typescript
+export class PlayerScoresService {
+  static async getPlayerScores(playerId: string, page: number) {
+    return CacheService.fetchWithCache(
+      CacheId.Players,
+      `player:${playerId}:scores:${page}`,
+      async () => {
+        return await ScoreSaberApiService.getPlayerScores(playerId, page);
+      }
+    );
+  }
+}
+```
+
+## WebSocket Integration
+
+Real-time score processing from external WebSockets:
+
+```typescript
+// websocket/score-websockets.ts
+export class ScoreWebsockets implements EventListener {
+  private static readonly PENDING_SCORES = new Map<string, PendingScore>();
+
+  constructor() {
+    // Connect to ScoreSaber WebSocket
+    connectScoresaberWebsocket({
+      onScore: async score => {
+        try {
+          const player = score.score.leaderboardPlayerInfo;
+          const leaderboard = getScoreSaberLeaderboardFromToken(score.leaderboard);
+
+          Logger.info(`[SS-WS] Received score for player ${player.id}`);
+
+          // Create/update player
+          if (!(await PlayerCoreService.createPlayer(player.id))) {
+            await PlayerCoreService.updatePlayerName(player.id, player.name);
+          }
+
+          // Create/update leaderboard
+          if (!(await LeaderboardCoreService.leaderboardExists(leaderboard.id))) {
+            await LeaderboardCoreService.createLeaderboard(
+              leaderboard.id,
+              score.leaderboard
+            );
+          }
+
+          // Broadcast to listeners
+          EventsManager.getListeners().forEach(listener => {
+            listener.onScoreReceived?.(
+              getScoreSaberScoreFromToken(score.score, leaderboard, player.id),
+              leaderboard,
+              player
+            );
+          });
+        } catch (error) {
+          Logger.error("[SS-WS] Error processing score:", error);
+        }
+      },
+      onDisconnect: event => {
+        Logger.warn("[SS-WS] Disconnected:", event);
+      }
+    });
+
+    // Connect to BeatLeader WebSocket
+    connectBeatLeaderWebsocket({
+      onScore: async beatLeaderScore => {
+        // Similar processing for BeatLeader scores
+      }
+    });
+  }
+}
+```
+
+## Event System
+
+Decoupled event handling:
+
+```typescript
+// event/event-listener.ts
+export interface EventListener {
+  onStart?(): void;
+  onStop?(): Promise<void>;
+  onScoreReceived?(
+    score: ScoreSaberScore,
+    leaderboard: ScoreSaberLeaderboard,
+    player: ScoreSaberLeaderboardPlayerInfoToken,
+    beatLeaderScore?: BeatLeaderScoreToken,
+    isTop50GlobalScore?: boolean
+  ): Promise<void>;
+}
+
+// event/events-manager.ts
+export class EventsManager {
+  private static listeners: EventListener[] = [];
+
+  static registerListener(listener: EventListener) {
+    this.listeners.push(listener);
+  }
+
+  static getListeners(): EventListener[] {
+    return this.listeners;
+  }
+}
+```
+
+**Registering listeners:**
+
+```typescript
+class QueueManager implements EventListener {
+  async onScoreReceived(score, leaderboard, player) {
+    // Add score processing job to queue
+    await this.queue.add('process-score', { score, leaderboard, player });
+  }
+}
+
+EventsManager.registerListener(new QueueManager());
+```
+
+## Scheduled Tasks
+
+Cron jobs for periodic tasks:
+
+```typescript
+app.use(
+  cron({
+    name: "player-statistics-tracker-cron",
+    pattern: "59 23 * * *",           // Every day at 23:59
+    timezone: "Europe/London",
+    protect: true,                     // Prevent overlapping runs
+    run: async () => {
+      await PlayerHistoryService.updatePlayerStatistics();
+    }
+  })
+);
+
+app.use(
+  cron({
+    name: "refresh-leaderboards-cron",
+    pattern: "30 */2 * * *",          // Every 2 hours at :30
+    timezone: "Europe/London",
+    protect: true,
+    run: async () => {
+      await LeaderboardRankingService.refreshRankedLeaderboards();
+      await LeaderboardRankingService.refreshQualifiedLeaderboards();
+    }
+  })
+);
+
+app.use(
+  cron({
+    name: "refresh-medal-scores",
+    pattern: "0 20 * * *",             // Every day at 20:00
+    timezone: "Europe/London",
+    protect: true,
+    run: async () => {
+      await MedalScoresService.rescanMedalScores();
+      await PlayerMedalsService.updatePlayerGlobalMedalCounts();
+    }
+  })
+);
+```
+
+## Error Handling
+
+Global error handler:
+
+```typescript
+app.onError({ as: "global" }, ({ code, error }) => {
+  // Handle validation errors
+  if (code === "VALIDATION") {
+    return (error as ValidationError).all;
+  }
+
+  // Map error codes to HTTP status
+  let status: number | undefined;
+  switch (code) {
+    case "INTERNAL_SERVER_ERROR":
+      status = 500;
+      break;
+    case "NOT_FOUND":
+      status = 404;
+      break;
+    case "PARSE":
+      status = 400;
+      break;
+  }
+
+  return {
+    statusCode: status,
+    message: error.message,
+    timestamp: new Date().toISOString()
+  };
+});
+```
+
+## Prometheus Metrics
+
+Application monitoring:
+
+```typescript
+// metrics/impl/backend/api-services.ts
+const apiRequestCounter = new Counter({
+  name: 'ssr_api_requests_total',
+  help: 'Total API requests',
+  labelNames: ['method', 'route', 'status']
+});
+
+const apiRequestDuration = new Histogram({
+  name: 'ssr_api_request_duration_seconds',
+  help: 'API request duration',
+  labelNames: ['method', 'route']
+});
+```
+
+**Metrics endpoint:**
+
+```typescript
+app.get("/metrics", async ({ headers, set }) => {
+  // Validate Bearer token
+  const authHeader = headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    set.status = 401;
+    return { error: "Unauthorized" };
+  }
+
+  const token = authHeader.substring(7);
+  if (token !== env.PROMETHEUS_AUTH_TOKEN) {
+    set.status = 401;
+    return { error: "Unauthorized" };
+  }
+
+  set.headers["content-type"] = "text/plain";
+  return await prometheusRegistry.metrics();
+});
+```
+
+## Graceful Shutdown
+
+Clean application termination:
+
+```typescript
+const gracefulShutdown = async (signal: string) => {
+  Logger.info(`Received ${signal}, starting graceful shutdown...`);
+
+  try {
+    // Stop accepting new requests
+    await app.stop();
+
+    // Stop all services
+    for (const listener of EventsManager.getListeners()) {
+      await listener.onStop?.();
+    }
+
+    // Close database connection
+    if (mongoose.connection.readyState === 1) {
+      await mongoose.disconnect();
+    }
+
+    Logger.info("Shutdown complete");
+    process.exit(0);
+  } catch (error) {
+    Logger.error("Error during shutdown:", error);
+    process.exit(1);
+  }
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+```

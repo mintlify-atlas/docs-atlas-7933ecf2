@@ -1,0 +1,226 @@
+---
+title: "Architecture Overview"
+description: "High-level architecture of ScoreSaber Reloaded: monorepo structure, tech stack, and data flow"
+---
+
+ScoreSaber Reloaded is a full-stack application built as a monorepo with three main projects working together to provide enhanced Beat Saber statistics and analytics.
+
+## Monorepo Structure
+
+The project uses **npm workspaces** to manage three interconnected packages:
+
+```
+scoresaber-reloaded/
+├── projects/
+│   ├── website/          # Next.js frontend
+│   ├── backend/          # Elysia API server
+│   └── common/           # Shared types and utilities
+└── package.json          # Root workspace configuration
+```
+
+From the root `package.json`:
+
+```json
+{
+  "name": "scoresaber-reloaded",
+  "workspaces": {
+    "packages": ["projects/*"]
+  }
+}
+```
+
+## Technology Stack
+
+### Frontend (Website)
+- **Framework**: Next.js 16 with React 19
+- **Rendering**: App Router with standalone output
+- **Styling**: Tailwind CSS 4.1
+- **State Management**: 
+  - Zustand for global state
+  - TanStack Query for server state
+  - Dexie (IndexedDB) for client-side persistence
+- **UI Components**: Radix UI primitives
+- **Charts**: Chart.js with react-chartjs-2
+- **Real-time**: WebSocket integration via `react-use-websocket`
+
+### Backend (API Server)
+- **Runtime**: Bun
+- **Framework**: Elysia 1.4
+- **Database**: MongoDB with Mongoose + Typegoose
+- **Caching**: Redis (ioredis)
+- **API Documentation**: OpenAPI/Swagger
+- **Task Scheduling**: Elysia Cron
+- **Real-time**: WebSocket connections to ScoreSaber and BeatLeader
+- **Monitoring**: Prometheus metrics
+- **Discord Integration**: Discord.js bot for notifications
+
+### Common Library
+- **Language**: TypeScript
+- **Validation**: Zod schemas
+- **API Client**: Axios
+- **Time Utils**: Day.js
+- **Serialization**: devalue for efficient data transfer
+- **Shared Models**: Typegoose models for MongoDB
+
+## System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Frontend                            │
+│  ┌────────────┐  ┌──────────────┐  ┌──────────────┐       │
+│  │  Next.js   │  │ TanStack     │  │   Dexie      │       │
+│  │  App       │─▶│ Query        │  │  (IndexedDB) │       │
+│  │  Router    │  │ (API Client) │  │              │       │
+│  └────────────┘  └──────┬───────┘  └──────────────┘       │
+│                         │                                   │
+└─────────────────────────┼───────────────────────────────────┘
+                          │ HTTP/WebSocket
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│                     Backend (Elysia)                        │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐     │
+│  │ Controllers  │─▶│   Services   │─▶│    Redis     │     │
+│  │              │  │              │  │   (Cache)    │     │
+│  └──────────────┘  └──────┬───────┘  └──────────────┘     │
+│                           │                                 │
+│  ┌──────────────┐         │          ┌──────────────┐     │
+│  │  WebSocket   │         ▼          │  Cron Jobs   │     │
+│  │   Manager    │    ┌─────────┐    │              │     │
+│  │              │    │ MongoDB │    └──────────────┘     │
+│  └──────────────┘    │         │                          │
+│                      └─────────┘                          │
+└─────────────────────────────────────────────────────────────┘
+                          │
+                          ▼
+        ┌─────────────────────────────────────┐
+        │       External APIs                 │
+        │  • ScoreSaber API                   │
+        │  • BeatLeader API                   │
+        │  • BeatSaver API                    │
+        │  • ScoreSaber WebSocket             │
+        │  • BeatLeader WebSocket             │
+        └─────────────────────────────────────┘
+```
+
+## Data Flow
+
+### 1. User Request Flow
+
+1. **Client Request**: User navigates to a page (e.g., `/player/76561198449793387`)
+2. **Next.js SSR**: Server renders initial HTML with metadata
+3. **TanStack Query**: Client fetches player data from backend API
+4. **Backend Controller**: Routes request to appropriate service
+5. **Service Layer**: Checks Redis cache first
+6. **Cache Miss**: Fetches from MongoDB or external APIs
+7. **Response**: Data flows back through the stack
+8. **Client Render**: React components display the data
+
+### 2. Real-time Score Updates
+
+```typescript
+// Backend: projects/backend/src/websocket/score-websockets.ts
+connectScoresaberWebsocket({
+  onScore: async score => {
+    // Process incoming score from ScoreSaber WebSocket
+    const player = score.score.leaderboardPlayerInfo;
+    const leaderboard = getScoreSaberLeaderboardFromToken(score.leaderboard);
+    
+    // Create/update player and leaderboard in MongoDB
+    await PlayerCoreService.createPlayer(player.id);
+    await LeaderboardCoreService.createLeaderboard(leaderboard.id, leaderboardToken);
+    
+    // Broadcast to connected clients
+    EventsManager.getListeners().forEach(listener => {
+      listener.onScoreReceived?.(score, leaderboard, player);
+    });
+  }
+});
+```
+
+### 3. Caching Strategy
+
+**Multi-layer caching** for optimal performance:
+
+- **Client-side (Dexie)**: User settings, player profiles (6 hours TTL)
+- **Server-side (Redis)**: API responses with varying TTL:
+  - BeatSaver maps: 7 days
+  - Player data: 30 minutes
+  - Leaderboards: 2 hours
+  - ScoreSaber API: 2 minutes
+
+```typescript
+// Backend: projects/backend/src/service/cache.service.ts
+export const CACHE_EXPIRY = {
+  [CacheId.BeatSaver]: TimeUnit.toSeconds(TimeUnit.Day, 7),
+  [CacheId.Players]: TimeUnit.toSeconds(TimeUnit.Minute, 30),
+  [CacheId.Leaderboards]: TimeUnit.toSeconds(TimeUnit.Hour, 2),
+};
+```
+
+## Key Features
+
+### Shared Type Safety
+
+The `@ssr/common` package ensures type safety across frontend and backend:
+
+```typescript
+// Shared in projects/common/src/model/player/player.ts
+export class Player {
+  @prop()
+  public _id!: string;
+  
+  @prop()
+  public name?: string;
+  
+  @prop({ index: true })
+  public pp?: number;
+}
+```
+
+### API Documentation
+
+Elysia automatically generates OpenAPI/Swagger docs:
+
+```typescript
+app.use(openapi({
+  path: "/swagger",
+  documentation: {
+    info: {
+      title: "SSR Backend",
+      description: "The API for ScoreSaber Reloaded!"
+    }
+  }
+}));
+```
+
+Access at: `http://localhost:8080/swagger`
+
+## Performance Optimizations
+
+### Frontend
+- **React Compiler**: Automatic memoization
+- **Optimized Imports**: Package-level tree shaking
+- **Image Optimization**: Unoptimized for faster builds
+- **Standalone Output**: Minimal Docker images
+
+### Backend
+- **Bun Runtime**: Fast JavaScript runtime
+- **Redis Caching**: Reduces database load
+- **Connection Pooling**: MongoDB connection reuse
+- **Prometheus Metrics**: Performance monitoring
+
+## Deployment
+
+Both frontend and backend are containerized:
+
+```
+backend/
+├── Dockerfile
+└── ssr-backend (compiled binary)
+
+website/
+├── Dockerfile
+└── .next/ (standalone build)
+```
+
+The standalone output includes all dependencies, making it perfect for Docker deployments.

@@ -1,80 +1,181 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get started with ScoreSaber Reloaded and start tracking your Beat Saber performance in minutes
 ---
 
-## Get started in three steps
+ScoreSaber Reloaded is a modern web platform for viewing your Beat Saber scores, statistics, and performance analytics. This guide will walk you through accessing the platform and exploring its key features.
 
-Get your documentation site running locally and make your first customization.
+## Access the platform
 
-### Step 1: Set up your local environment
-
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
+<Steps>
+  <Step title="Visit the website">
+    Navigate to [ssr.fascinated.cc](https://ssr.fascinated.cc) in your web browser. The landing page showcases the platform's main features including comprehensive data tracking, friend systems, advanced analytics, and custom overlays.
+  </Step>
+  
+  <Step title="Search for a player">
+    Use the search functionality to find your profile. There are two ways to search:
     
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
+    - Click the **Find Players** button on the landing page
+    - Press `Cmd+K` (Mac) or `Ctrl+K` (Windows/Linux) to open the quick search dialog
     
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
-
-### Step 2: Deploy your changes
-
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
+    <Tip>
+      You can search by either your ScoreSaber player ID (the number in your ScoreSaber profile URL) or your username. The search requires at least 4 characters.
+    </Tip>
     
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    The search dialog supports both player and leaderboard searches, displaying results organized by category.
+  </Step>
+  
+  <Step title="View your profile">
+    Select your player from the search results to navigate to your profile page at `/player/[your-id]`. Your profile displays:
+    
+    - **Player header**: Avatar, username, rank, country rank, and performance points
+    - **Statistics cards**: Ranked accuracy, total play count, replays watched, and more
+    - **Account status indicators**: Active/inactive status and any badges
+    - **Quick actions**: Steam profile link, friend management, and profile claiming
+    
+    <Note>
+      If you see an "Inactive Account" badge, this indicates the account hasn't been active recently on ScoreSaber.
+    </Note>
+  </Step>
+</Steps>
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+## Navigate the interface
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+Once you've accessed a player profile, you'll find several key sections:
 
-### Step 3: Go live
+### Player header
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+The header displays essential player information including:
+
+- Steam avatar and username with role-based coloring
+- Global rank and country rank with performance points (PP)
+- HMD (headset) information and join date
+- Account status badges for inactive or banned accounts
+- Steam profile link and friend management buttons
+
+### Performance charts
+
+The platform offers multiple chart views to visualize your progress:
+
+<CardGroup cols={2}>
+  <Card title="Simple ranking chart" icon="chart-line">
+    Track your global rank changes over time with a clean line graph.
+  </Card>
+  
+  <Card title="Advanced ranking chart" icon="chart-area">
+    View detailed rank progression with additional metrics and comparisons.
+  </Card>
+  
+  <Card title="Scores chart" icon="chart-bar">
+    Analyze your score distribution and trends across all plays.
+  </Card>
+  
+  <Card title="Accuracy chart" icon="bullseye">
+    Monitor your accuracy improvements and consistency over time.
+  </Card>
+</CardGroup>
+
+### Platform tabs
+
+Switch between different scoring platforms using the platform selector:
+
+- **ScoreSaber**: Official ranked scores and leaderboards
+- **Medal Scores**: Achievement-based scoring filtered by medal requirements
+- **AccSaber**: Accuracy-focused rankings and scores
+
+Each platform displays scores with detailed breakdowns including:
+- Map information (song name, difficulty, mapper)
+- Score details (points, accuracy percentage, misses)
+- Performance metrics (PP value for ranked maps)
+- Timing and date of play
+
+### Mini rankings sidebar
+
+On desktop views, the sidebar displays mini rankings showing:
+
+- Friend rankings comparison
+- Country leaderboard position
+- Global leaderboard context
+- Recent rank changes
+
+<Tip>
+  The mini rankings update automatically when your scores change, giving you real-time feedback on your competitive position.
+</Tip>
+
+## Explore key features
+
+### Search functionality
+
+The global search (accessible via `Cmd+K` / `Ctrl+K`) lets you:
+
+- Search for players by name or ID
+- Find leaderboards by song name or mapper
+- Filter results by ranked, qualified, or unranked status
+- View results sorted by relevance and star difficulty
+
+```tsx
+// The search debounces your input for smooth performance
+const debouncedQuery = useDebounce(query, 200);
+
+// Searches require minimum 4 characters
+if (debouncedQuery.length <= 3 && debouncedQuery.length !== 0) {
+  return { players: [], leaderboards: [] };
+}
+```
+
+### Global rankings
+
+Navigate to `/ranking` to explore the global leaderboard:
+
+- Browse players ranked worldwide
+- Filter by specific countries using `/ranking/[country-code]`
+- Paginate through rankings 50 players at a time
+- View rank, country, PP, and other key metrics
+
+### Friend system
+
+Build your network by adding friends:
+
+1. Visit a player's profile
+2. Click the **Add Friend** button in the header
+3. View friend rankings on your home page at `/home`
+4. See friend scores and compare performance
+
+<Note>
+  The friend system helps you track progress within your gaming community and creates a more social experience.
+</Note>
+
+### Home dashboard
+
+After claiming your profile, access your personalized dashboard at `/home` featuring:
+
+- Your current profile overview
+- Friend rankings comparison card
+- Friend scores feed showing recent plays
+- Quick access to your statistics
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+Now that you're familiar with the basics, explore these advanced features:
 
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Custom overlays" icon="monitor" href="/features/overlays">
+    Create streaming overlays with real-time score updates
+  </Card>
+  
+  <Card title="Statistics" icon="chart-pie" href="/features/statistics">
+    Dive deeper into platform-wide statistics and trends
+  </Card>
+  
+  <Card title="Leaderboards" icon="trophy" href="/features/leaderboards">
+    Browse and search detailed song leaderboards
+  </Card>
+  
+  <Card title="Settings" icon="gear" href="/features/settings">
+    Customize your experience and preferences
+  </Card>
 </CardGroup>
 
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+<Warning>
+  Remember that ScoreSaber Reloaded pulls data from ScoreSaber's official API. Score updates may take a few minutes to reflect after playing.
+</Warning>

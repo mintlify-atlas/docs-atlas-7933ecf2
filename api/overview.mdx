@@ -1,0 +1,185 @@
+---
+title: 'API Overview'
+description: 'Introduction to the ScoreSaber Reloaded REST API, including base URL, response formats, and error handling'
+---
+
+## Introduction
+
+The ScoreSaber Reloaded API is a REST API built with Elysia that provides programmatic access to player profiles, scores, leaderboards, and statistics. The API uses OpenAPI specifications and is available at `/swagger` for interactive documentation.
+
+## Base URL
+
+The API is available at:
+
+```
+https://ssr-api.fascinated.cc
+```
+
+For development environments:
+
+```
+http://localhost:8080
+```
+
+## Response Format
+
+The API supports multiple response formats based on the `Accept` header:
+
+### JSON (Default)
+
+All endpoints return JSON by default:
+
+```bash
+curl https://ssr-api.fascinated.cc/player/76561198449412074
+```
+
+<ResponseField name="content-type" type="string">
+  `application/json`
+</ResponseField>
+
+### Devalue Format
+
+For optimized data serialization, send the `Accept: application/devalue` header:
+
+```bash
+curl -H "Accept: application/devalue" https://ssr-api.fascinated.cc/player/76561198449412074
+```
+
+<ResponseField name="content-type" type="string">
+  `application/devalue`
+</ResponseField>
+
+## Error Handling
+
+The API uses standard HTTP status codes and returns structured error responses.
+
+### Error Response Format
+
+All errors follow this structure:
+
+<ResponseField name="statusCode" type="number">
+  HTTP status code (400, 404, 429, 500, etc.)
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Human-readable error message describing what went wrong
+</ResponseField>
+
+<ResponseField name="timestamp" type="string">
+  ISO 8601 timestamp when the error occurred
+</ResponseField>
+
+### Common Status Codes
+
+<ResponseField name="200" type="Success">
+  Request completed successfully
+</ResponseField>
+
+<ResponseField name="400" type="Bad Request">
+  Invalid request parameters or malformed request body
+</ResponseField>
+
+<ResponseField name="404" type="Not Found">
+  The requested resource (player, leaderboard, score) was not found
+</ResponseField>
+
+<ResponseField name="429" type="Too Many Requests">
+  Rate limit exceeded - slow down your requests
+</ResponseField>
+
+<ResponseField name="500" type="Internal Server Error">
+  An unexpected error occurred on the server
+</ResponseField>
+
+### Example Error Response
+
+```json
+{
+  "statusCode": 404,
+  "message": "Player \"12345\" not found",
+  "timestamp": "2026-03-04T12:34:56.789Z"
+}
+```
+
+### Validation Errors
+
+Validation errors (400 status) return an array of validation issues:
+
+```bash
+curl https://ssr-api.fascinated.cc/leaderboard/search?page=invalid
+```
+
+Response:
+
+```json
+[
+  {
+    "type": "Query",
+    "at": "page",
+    "message": "Expected number",
+    "expected": {
+      "type": "number"
+    }
+  }
+]
+```
+
+## Rate Limits
+
+The API implements rate limiting to ensure fair usage and system stability. When the rate limit is exceeded, the API returns a `429 Too Many Requests` status code.
+
+<Note>
+  Rate limits are monitored and adjusted dynamically. The API tracks ScoreSaber's rate limit headers (`x-ratelimit-remaining`) when proxying requests.
+</Note>
+
+### Rate Limit Response
+
+```json
+{
+  "statusCode": 429,
+  "message": "rate-limited",
+  "timestamp": "2026-03-04T12:34:56.789Z"
+}
+```
+
+## OpenAPI Documentation
+
+Interactive API documentation is available at:
+
+```
+https://ssr-api.fascinated.cc/swagger
+```
+
+The Swagger UI provides:
+- Complete endpoint listing with parameters
+- Request/response schemas
+- Try-it-out functionality
+- Type definitions and examples
+
+## Health Check
+
+Verify the API is operational:
+
+```bash
+curl https://ssr-api.fascinated.cc/health
+```
+
+Response:
+
+```
+OK
+```
+
+## API Statistics
+
+Get backend statistics:
+
+```bash
+curl https://ssr-api.fascinated.cc/statistics
+```
+
+Returns information about:
+- Total players tracked
+- Total scores stored
+- Database statistics
+- Cache metrics

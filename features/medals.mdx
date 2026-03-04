@@ -1,0 +1,401 @@
+---
+title: Medals
+description: Competitive medal system rewarding top leaderboard positions with rankings and statistics on ScoreSaber Reloaded.
+---
+
+## Overview
+
+The medal system on ScoreSaber Reloaded rewards players for achieving top positions on ranked map leaderboards. Medals provide an alternative competitive metric beyond PP, emphasizing consistency and competitive placement across many maps.
+
+<CardGroup cols={2}>
+  <Card title="Medal Rewards" icon="medal">
+    Earn medals for finishing in the top 10 on any ranked leaderboard
+  </Card>
+  <Card title="Medal Rankings" icon="ranking-star">
+    Compete on global and country medal leaderboards
+  </Card>
+  <Card title="Medal Filtering" icon="filter">
+    View only scores that earned medals on player profiles
+  </Card>
+  <Card title="Medal Tracking" icon="chart-line">
+    Track medal counts over time and by map difficulty
+  </Card>
+</CardGroup>
+
+## Medal System
+
+Medals are awarded based on leaderboard position:
+
+### Medal Values by Rank
+
+<Accordion title="Medal Allocation">
+  - **Rank #1** - 10 medals (Gold, first place)
+  - **Rank #2** - 8 medals (Silver, second place)
+  - **Rank #3** - 6 medals (Bronze, third place)
+  - **Rank #4** - 5 medals
+  - **Rank #5** - 4 medals
+  - **Rank #6** - 3 medals
+  - **Rank #7** - 2 medals
+  - **Rank #8** - 1 medal
+  - **Rank #9** - 1 medal
+  - **Rank #10** - 1 medal
+</Accordion>
+
+<Note>
+  Medals are only awarded for **ranked** maps. Unranked maps do not contribute to medal counts.
+</Note>
+
+### Medal Calculation
+
+Your total medal count is calculated by:
+
+1. Finding your highest position on each ranked leaderboard
+2. Awarding medals based on the position (using the table above)
+3. Summing all medals across all maps
+4. Updating in real-time as you set new scores or other players beat your scores
+
+<Tip>
+  Unlike PP, medals don't use a weighted curve. Every top-10 position contributes fully to your medal total, regardless of map difficulty.
+</Tip>
+
+## Medal Rankings
+
+Compete on dedicated medal leaderboards:
+
+### Accessing Medal Rankings
+
+Navigate to `/medals` to view:
+
+- **Global Medal Ranking** - All players ranked by total medals
+- **Country Medal Ranking** - Filter by country using the dropdown
+- **Pagination** - Browse through thousands of medal earners
+- **Player Search** - Find specific players in the rankings
+
+### Medal Ranking Display
+
+Each player entry shows:
+
+- **Medal Rank** - Global position by medal count (e.g., #42)
+- **Country Medal Rank** - Position within their country
+- **Player Info** - Name, avatar, country flag
+- **Total Medals** - Medal count with icon
+- **Quick Actions** - Add friend, view profile
+
+<Accordion title="Medal Ranking Categories">
+  - **Global Rankings** - All players worldwide
+  - **Country Rankings** - Players from the same country
+  - **Regional Rankings** (future) - Continental groupings
+  - **Friends Rankings** (future) - Only your friends
+</Accordion>
+
+## Medal Scores View
+
+Player profiles include a dedicated "Medal Scores" platform tab:
+
+### Accessing Medal Scores
+
+1. Navigate to any player profile
+2. Click the "Medal Scores" tab (between ScoreSaber and AccSaber)
+3. View only scores that earned medals (top 10 positions)
+4. Sort and filter like regular scores
+
+### Medal Score Features
+
+- **Medal Icons** - Visual indicators showing rank position
+- **Medal Count** - Running total displayed
+- **Sorting** - By PP, date, stars, position, or medals earned
+- **Filtering** - By star range, accuracy, or date
+- **Export** - Download medal scores as CSV
+
+<Tip>
+  Use the medal scores view to identify your most competitive performances. Focus on protecting these scores from being overtaken.
+</Tip>
+
+## Medal Statistics
+
+Detailed medal analytics on player profiles:
+
+### Medal Breakdown
+
+<CardGroup cols={3}>
+  <Card title="Total Medals" icon="medal">
+    Sum of all medals earned across all maps
+  </Card>
+  <Card title="#1 Positions" icon="trophy">
+    Number of first-place finishes (10 medals each)
+  </Card>
+  <Card title="Top 10 Count" icon="star">
+    Total number of top-10 placements
+  </Card>
+</CardGroup>
+
+### Medals by Position
+
+See distribution:
+
+- How many #1, #2, #3, etc. positions
+- Total medals from each position tier
+- Percentage of medals from top 3 vs 4-10
+- Competitive strength indicator
+
+### Medals by Star Rating
+
+Analyze medal sources:
+
+- Medals earned from easy maps (1-3 stars)
+- Medals from intermediate maps (3-6 stars)
+- Medals from hard maps (6-9 stars)
+- Medals from extreme maps (9+ stars)
+
+<Note>
+  Most players earn the majority of their medals in the 3-7 star range where competition is balanced with achievability.
+</Note>
+
+## Medal Hunting
+
+Strategies to increase your medal count:
+
+### Finding Medal Opportunities
+
+<AccordionGroup>
+  <Accordion title="Target Easy Wins">
+    - Search for low-play-count maps where top 10 is achievable
+    - Filter maps by star range matching your skill level
+    - Focus on newly ranked maps before competition intensifies
+    - Check maps in your top PP range (you already excel at that difficulty)
+  </Accordion>
+
+  <Accordion title="Protect Existing Medals">
+    - Monitor your medal scores for players approaching your position
+    - Set up alerts (future feature) when you drop out of top 10
+    - Revisit maps where you hold #4-#10 to improve to top 3
+    - Focus on maps with high medal values (#1-#3)
+  </Accordion>
+
+  <Accordion title="Strategic Grinding">
+    - Create a playlist of maps where you're ranked #11-#20
+    - Sort by maps with the most medals at stake (aim for #1-#3)
+    - Practice consistently on these maps
+    - Replay when you're performing at your peak
+  </Accordion>
+</AccordionGroup>
+
+<Tip>
+  Medals favor **breadth** over **depth**. Setting 100 scores in the top 10 earns more medals than perfecting 10 scores to #1.
+</Tip>
+
+## Medal vs PP Rankings
+
+Understanding the differences:
+
+### PP Rankings
+
+- **Weighted System** - Top scores count most, weighted curve
+- **Difficulty Focus** - Higher star maps give more PP
+- **Accuracy Sensitive** - Small accuracy differences = large PP gaps
+- **Top-Heavy** - Your best 50-100 scores determine PP
+
+### Medal Rankings
+
+- **Unweighted System** - All top-10 scores count equally
+- **Consistency Focus** - Rewards breadth across many maps
+- **Position-Based** - Rank on leaderboard matters more than score/accuracy
+- **Inclusive** - Easy and hard maps contribute equally
+
+<Accordion title="Which Ranking Should I Focus On?">
+  **Focus on PP if:**
+  - You want to be highly ranked in the global leaderboards
+  - You enjoy pushing yourself on challenging maps
+  - You prefer depth over breadth
+  - Accuracy optimization is your strength
+
+  **Focus on Medals if:**
+  - You enjoy competitive leaderboard battles
+  - You prefer playing a wide variety of maps
+  - You want an alternative to PP grinding
+  - You like tracking incremental progress
+
+  **Do Both:**
+  - Most players naturally earn medals while grinding PP
+  - Medal hunting is a great secondary goal
+  - Diversifies your skill development
+</Accordion>
+
+## Medal Leaderboard Filtering
+
+Find players in the medal rankings:
+
+### Country Filter
+
+1. Open the country dropdown
+2. Select a country (shows player count per country)
+3. View the top medal earners from that country
+4. Compare country medal rankings
+
+### Search Players
+
+Find specific players:
+
+- Type player name in search box
+- Instant filtering of results
+- Jump to player's medal rank
+- View their medal count and profile
+
+## Medal Rankings Display
+
+The medal ranking page shows:
+
+### Main Ranking List
+
+- **Rank Number** - Global or country position
+- **Player Card** - Avatar, name, country flag
+- **Medal Count** - Total medals with icon
+- **Change Indicators** - Rank movement (future feature)
+- **Add Friend** - Quick add button
+
+### Filter Sidebar
+
+- **Country Selector** - Filter by country
+- **Medal Info Card** - Explains the medal system
+- **Quick Stats** - Total medals distributed, top player, etc.
+
+### Pagination
+
+- 50 players per page
+- Page selector with jump-to-page
+- Next/Previous navigation
+- Display total pages and player count
+
+## Medal API Integration
+
+Access medal data programmatically:
+
+### Get Medal Rankings
+
+```http
+GET /ranking/medals/{page}?country={countryCode}
+```
+
+**Parameters:**
+- `page` (number) - Page number (1-indexed)
+- `country` (optional string) - ISO 3166-1 alpha-2 country code
+
+**Response:**
+```json
+{
+  "items": [
+    {
+      "id": "player_id",
+      "name": "Player Name",
+      "country": "US",
+      "medals": 1523,
+      "medalsRank": 42,
+      "countryMedalsRank": 7
+    }
+  ],
+  "metadata": {
+    "totalItems": 50000,
+    "itemsPerPage": 50,
+    "page": 1
+  },
+  "countryMetadata": {
+    "US": 5234,
+    "UK": 3421,
+    ...
+  }
+}
+```
+
+### Get Player Medal Stats
+
+Included in standard player profile endpoint:
+
+```http
+GET /player/{playerId}
+```
+
+Response includes:
+- `medals` (number) - Total medal count
+- `medalsRank` (number) - Global medal rank
+- `countryMedalsRank` (number) - Country medal rank
+
+<Note>
+  Medal data is updated in real-time as scores are submitted. Rankings recalculate every 5 minutes.
+</Note>
+
+## Medal Info Card
+
+The statistics card explains the medal system:
+
+### Displayed Information
+
+- **System Overview** - How medals are earned
+- **Medal Values** - Breakdown of medals by position
+- **Visual Reference** - Medal icons and position numbers
+- **Quick Tips** - Strategies for earning medals
+
+## Medal Milestones
+
+Celebrated medal achievements:
+
+- **100 Medals** - Establishing competitive presence
+- **500 Medals** - Strong competitive player
+- **1,000 Medals** - Elite medal hunter
+- **2,500 Medals** - Top-tier consistency
+- **5,000 Medals** - Legendary status
+
+<Tip>
+  The top medal earners have 5,000+ medals, requiring top-10 finishes on 500-5,000+ ranked maps depending on positions.
+</Tip>
+
+## Future Medal Features
+
+Planned enhancements:
+
+<AccordionGroup>
+  <Accordion title="Medal Notifications">
+    - Alerts when you earn a new medal
+    - Warnings when you lose medals (dropped out of top 10)
+    - Daily/weekly medal summary emails
+    - Discord webhook integration
+  </Accordion>
+
+  <Accordion title="Medal Analytics">
+    - Medal earning rate over time
+    - Prediction of medal rank trajectory
+    - Comparison with similar-skilled players
+    - Medal efficiency (medals per play)
+  </Accordion>
+
+  <Accordion title="Medal Leaderboards by Category">
+    - Medals by star range (easy, medium, hard)
+    - Medals by map style (speed, tech, acc)
+    - Medals by time period (monthly, yearly)
+    - Friend-only medal rankings
+  </Accordion>
+</AccordionGroup>
+
+## Tips for Medal Ranking
+
+<AccordionGroup>
+  <Accordion title="Efficient Medal Farming">
+    - Focus on maps with fewer than 1000 plays for easier top 10
+    - Target the 4-6 star range where competition is moderate
+    - Play newly ranked maps early before competition intensifies
+    - Use medal scores view to identify vulnerable positions to defend
+  </Accordion>
+
+  <Accordion title="Climbing Medal Rankings">
+    - Set a daily medal goal (e.g., earn 5-10 medals per day)
+    - Create playlists of "almost top 10" maps (your rank #11-#20)
+    - Diversify across all star ranges for maximum opportunities
+    - Track your medal/day rate to monitor progress
+  </Accordion>
+
+  <Accordion title="Maintaining Medal Position">
+    - Regularly check your medal scores for drops in rank
+    - Focus on protecting high-value medals (#1-#3 positions)
+    - Revisit maps where you've dropped from #10 to #11-#15
+    - Stay active - inactive periods lead to medal losses
+  </Accordion>
+</AccordionGroup>

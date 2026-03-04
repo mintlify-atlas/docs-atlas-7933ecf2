@@ -1,0 +1,590 @@
+---
+title: "Database Architecture"
+description: "MongoDB models, Redis caching, and data persistence strategies"
+---
+
+ScoreSaber Reloaded uses a dual-database architecture: **MongoDB** for persistent data storage and **Redis** for high-performance caching.
+
+## MongoDB with Typegoose
+
+### Schema Definition
+
+Typegoose provides TypeScript decorators for Mongoose schemas:
+
+```typescript
+// projects/common/src/model/player/player.ts
+import { getModelForClass, index, modelOptions, prop } from "@typegoose/typegoose";
+
+@modelOptions({
+  options: { allowMixed: Severity.ALLOW },
+  schemaOptions: { collection: "players" }
+})
+@index({ inactive: 1, pp: -1 })          // Compound index for rankings
+@index({ joinedDate: 1 })                 // Index for new players
+export class Player {
+  @prop()
+  public _id!: string;                    // ScoreSaber player ID
+
+  @prop()
+  public name?: string;
+
+  @prop({ index: true })
+  public pp?: number;
+
+  @prop()
+  public country?: string;
+
+  @prop({ index: true })
+  public medals?: number;
+
+  @prop()
+  public peakRank?: PeakRank;
+
+  @prop()
+  public seededScores?: boolean;          // Score import status
+
+  @prop({ index: true })
+  public inactive?: boolean;              // Activity flag
+
+  @prop()
+  public banned?: boolean;
+
+  @prop()
+  public hmd?: string;                    // VR headset type
+
+  @prop()
+  public trackedSince?: Date;             // First tracking date
+
+  @prop()
+  public joinedDate?: Date;               // ScoreSaber join date
+
+  // Instance method
+  public async getDaysTracked(): Promise<number> {
+    const PlayerHistoryEntryModel = (await import("./player-history-entry")).PlayerHistoryEntryModel;
+    return await PlayerHistoryEntryModel.countDocuments({ playerId: this._id });
+  }
+}
+
+export type PlayerDocument = Player & Document;
+export const PlayerModel = getModelForClass(Player);
+```
+
+### Leaderboard Model
+
+```typescript
+// projects/common/src/model/leaderboard/impl/scoresaber-leaderboard.ts
+import { getModelForClass, modelOptions, Prop } from "@typegoose/typegoose";
+import Leaderboard from "../leaderboard";
+import { type LeaderboardStatus } from "../leaderboard-status";
+
+@modelOptions({
+  options: { allowMixed: Severity.ALLOW },
+  schemaOptions: {
+    collection: "scoresaber-leaderboards"
+  }
+})
+export default class ScoreSaberLeaderboardInternal extends Leaderboard {
+  @Prop({ required: true, index: true })
+  readonly stars!: number;                // Star difficulty rating
+
+  @Prop({ required: true })
+  readonly plays!: number;                // Total play count
+
+  @Prop({ required: true })
+  dailyPlays!: number;                    // Plays in last 24h
+
+  @Prop({ required: true, index: true })
+  readonly qualified!: boolean;           // Qualification status
+
+  @Prop({ required: true })
+  readonly status!: LeaderboardStatus;    // ranked/qualified/unranked
+
+  @Prop({ required: false })
+  readonly dateRanked?: Date;
+
+  @Prop({ required: false })
+  readonly dateQualified?: Date;
+
+  @Prop({ required: false, index: true })
+  readonly seededScores?: boolean;        // Score import status
+
+  @Prop({ required: false, index: true })
+  readonly cachedSongArt?: boolean;       // Image cache status
+}
+
+export type ScoreSaberLeaderboard = InstanceType<typeof ScoreSaberLeaderboardInternal>;
+export type ScoreSaberLeaderboardDocument = ScoreSaberLeaderboard & Document;
+export const ScoreSaberLeaderboardModel: ReturnModelType<typeof ScoreSaberLeaderboardInternal> =
+  getModelForClass(ScoreSaberLeaderboardInternal);
+```
+
+### Base Leaderboard Class
+
+```typescript
+// projects/common/src/model/leaderboard/leaderboard.ts
+export default class Leaderboard {
+  @prop({ required: true })
+  public _id!: number;                    // ScoreSaber leaderboard ID
+
+  @prop({ required: true })
+  public songHash!: string;               // Beat Saber map hash
+
+  @prop({ required: true })
+  public songName!: string;
+
+  @prop({ required: true })
+  public songAuthorName!: string;
+
+  @prop({ required: true })
+  public levelAuthorName!: string;        // Mapper name
+
+  @prop({ required: true, type: () => LeaderboardDifficulty })
+  public difficulty!: LeaderboardDifficulty;
+
+  @prop({ required: true })
+  public maxScore!: number;
+
+  @prop({ required: true })
+  public createdDate!: Date;
+}
+```
+
+## Database Operations
+
+### Creating Documents
+
+```typescript
+// service/player/player-core.service.ts
+export class PlayerCoreService {
+  static async createPlayer(playerId: string): Promise<boolean> {
+    // Check if player exists
+    const exists = await PlayerModel.exists({ _id: playerId });
+    if (exists) return false;
+    
+    // Fetch from ScoreSaber API
+    const player = await ScoreSaberApiService.lookupPlayer(playerId);
+    if (!player) {
+      throw new NotFoundError(`Player ${playerId} not found`);
+    }
+    
+    // Create in MongoDB
+    await PlayerModel.create({
+      _id: playerId,
+      name: player.name,
+      country: player.country,
+      pp: player.pp,
+      hmd: player.hmd,
+      joinedDate: player.firstSeen,
+      trackedSince: new Date()
+    });
+    
+    Logger.info(`Created player ${playerId} (${player.name})`);
+    return true;
+  }
+}
+```
+
+### Updating Documents
+
+```typescript
+export class PlayerCoreService {
+  static async updatePlayerName(playerId: string, name: string): Promise<void> {
+    await PlayerModel.updateOne(
+      { _id: playerId },
+      { $set: { name } }
+    );
+  }
+  
+  static async markPlayerInactive(playerId: string): Promise<void> {
+    await PlayerModel.updateOne(
+      { _id: playerId },
+      { $set: { inactive: true } }
+    );
+  }
+}
+```
+
+### Complex Queries
+
+```typescript
+// Get top players by PP
+export class PlayerRankingService {
+  static async getTopPlayers(country?: string, limit: number = 50) {
+    const query: any = { inactive: false };
+    if (country) {
+      query.country = country;
+    }
+    
+    return await PlayerModel.find(query)
+      .sort({ pp: -1 })               // Descending PP
+      .limit(limit)
+      .lean()                          // Plain objects (faster)
+      .exec();
+  }
+}
+
+// Get players by medal count
+export class PlayerMedalsService {
+  static async getTopMedalPlayers(limit: number = 50) {
+    return await PlayerModel.find({
+      medals: { $gt: 0 },             // Has medals
+      inactive: false
+    })
+      .sort({ medals: -1 })            // Descending medals
+      .limit(limit)
+      .lean()
+      .exec();
+  }
+}
+```
+
+### Aggregation Pipeline
+
+```typescript
+export class PlayerHistoryService {
+  static async getPlayerStatisticHistories(
+    player: ScoreSaberPlayer,
+    startDate: Date,
+    endDate: Date
+  ) {
+    return await PlayerHistoryEntryModel.aggregate([
+      {
+        $match: {
+          playerId: player.id,
+          date: {
+            $gte: startDate,
+            $lte: endDate
+          }
+        }
+      },
+      {
+        $sort: { date: 1 }            // Ascending date
+      },
+      {
+        $project: {
+          date: 1,
+          rank: 1,
+          pp: 1,
+          countryRank: 1,
+          accuracy: 1
+        }
+      }
+    ]);
+  }
+}
+```
+
+## Redis Caching
+
+### Cache Configuration
+
+```typescript
+// service/cache.service.ts
+export enum CacheId {
+  BeatSaver = "beatSaver",
+  ScoreSaber = "scoresaber",
+  ScoreSaberApi = "scoresaberApi",
+  Leaderboards = "leaderboards",
+  BeatLeaderScore = "beatLeaderScore",
+  Players = "players",
+  ScoreStats = "scoreStats",
+  PreviousScore = "previousScore",
+  ScoreHistoryGraph = "scoreHistoryGraph"
+}
+
+export default class CacheService {
+  public static readonly CACHE_EXPIRY = {
+    [CacheId.BeatSaver]: TimeUnit.toSeconds(TimeUnit.Day, 7),       // 7 days
+    [CacheId.ScoreSaber]: TimeUnit.toSeconds(TimeUnit.Minute, 2),   // 2 minutes
+    [CacheId.ScoreSaberApi]: TimeUnit.toSeconds(TimeUnit.Minute, 2),
+    [CacheId.Leaderboards]: TimeUnit.toSeconds(TimeUnit.Hour, 2),   // 2 hours
+    [CacheId.BeatLeaderScore]: TimeUnit.toSeconds(TimeUnit.Hour, 1),
+    [CacheId.Players]: TimeUnit.toSeconds(TimeUnit.Minute, 30),     // 30 minutes
+    [CacheId.ScoreStats]: TimeUnit.toSeconds(TimeUnit.Hour, 12),    // 12 hours
+    [CacheId.PreviousScore]: TimeUnit.toSeconds(TimeUnit.Hour, 1),
+    [CacheId.ScoreHistoryGraph]: TimeUnit.toSeconds(TimeUnit.Hour, 1)
+  };
+}
+```
+
+### Cache Implementation
+
+```typescript
+import { redisClient } from "../common/redis";
+import { parse, stringify } from "devalue";  // Efficient serialization
+
+export default class CacheService {
+  public static async fetchWithCache<T>(
+    cache: CacheId,
+    cacheKey: string,
+    fetchFn: () => Promise<T>
+  ): Promise<T> {
+    // Skip cache in development
+    if (!isProduction()) {
+      return fetchFn();
+    }
+
+    // Check Redis for cached data
+    const cachedData = await redisClient.get(cacheKey);
+    if (cachedData) {
+      try {
+        return parse(cachedData) as T;  // Deserialize with devalue
+      } catch {
+        Logger.warn(`Failed to parse cached data for ${cacheKey}`);
+        await redisClient.del(cacheKey);
+      }
+    }
+
+    // Cache miss - fetch fresh data
+    const data = await fetchFn();
+    if (data) {
+      const result = await redisClient.set(
+        cacheKey,
+        stringify(data),              // Serialize with devalue
+        "EX",                          // Set expiration
+        this.CACHE_EXPIRY[cache]      // TTL in seconds
+      );
+      
+      if (result !== "OK") {
+        throw new InternalServerError(`Failed to set cache for ${cacheKey}`);
+      }
+    }
+
+    return data;
+  }
+
+  public static async invalidate(cacheKey: string): Promise<void> {
+    await redisClient.del(cacheKey);
+  }
+}
+```
+
+### Cache Usage Examples
+
+**Caching player data:**
+
+```typescript
+export class PlayerService {
+  static async getPlayer(playerId: string): Promise<ScoreSaberPlayer> {
+    return CacheService.fetchWithCache(
+      CacheId.Players,
+      `player:${playerId}`,
+      async () => {
+        return await ScoreSaberApiService.lookupPlayer(playerId);
+      }
+    );
+  }
+}
+```
+
+**Caching leaderboard data:**
+
+```typescript
+export class LeaderboardService {
+  static async getLeaderboard(leaderboardId: number): Promise<ScoreSaberLeaderboard> {
+    return CacheService.fetchWithCache(
+      CacheId.Leaderboards,
+      `leaderboard:${leaderboardId}`,
+      async () => {
+        const leaderboard = await ScoreSaberLeaderboardModel.findById(leaderboardId).lean();
+        if (!leaderboard) {
+          throw new NotFoundError(`Leaderboard ${leaderboardId} not found`);
+        }
+        return leaderboard;
+      }
+    );
+  }
+}
+```
+
+**Invalidating cache on update:**
+
+```typescript
+export class PlayerCoreService {
+  static async refreshPlayer(playerId: string): Promise<ScoreSaberPlayer> {
+    // Invalidate cache
+    await CacheService.invalidate(`player:${playerId}`);
+    
+    // Fetch fresh data
+    const player = await ScoreSaberApiService.lookupPlayer(playerId);
+    
+    // Update database
+    await PlayerModel.updateOne(
+      { _id: playerId },
+      { name: player.name, pp: player.pp, country: player.country }
+    );
+    
+    return player;
+  }
+}
+```
+
+## Client-side Database (Dexie)
+
+The frontend uses **Dexie** (IndexedDB wrapper) for offline-first persistence:
+
+```typescript
+// projects/website/src/common/database/database.ts
+import Dexie, { EntityTable } from "dexie";
+
+type CacheItem = {
+  id: string;
+  lastUpdated: number;
+  item: unknown;
+};
+
+type Setting = {
+  id: string;
+  value: unknown;
+};
+
+export default class Database extends Dexie {
+  settings!: EntityTable<Setting, "id">;
+  cache!: EntityTable<CacheItem, "id">;
+
+  constructor(before: number) {
+    super("ssr");
+
+    this.version(1).stores({
+      settings: "id",
+      cache: "id"
+    });
+  }
+
+  // Cache player data in IndexedDB (6 hour TTL)
+  public async getPlayer(id: string): Promise<ScoreSaberPlayer | undefined> {
+    return this.getCache<ScoreSaberPlayer>(
+      `player:${id}`,
+      DEFAULT_PLAYER_CACHE_TTL,  // 6 hours
+      async () => {
+        return await ssrApi.getScoreSaberPlayer(id, "basic");
+      }
+    );
+  }
+
+  // Get cached data or fetch if expired
+  private async getCache<T>(
+    key: string,
+    ttl: number,
+    insertCallback?: () => Promise<T | undefined>
+  ): Promise<T | undefined> {
+    const item = await this.cache.get(key);
+    const ttlMs = ttl * 1000;
+
+    // Return if cache is still valid
+    if (item && item.lastUpdated + ttlMs >= Date.now()) {
+      return item.item as T;
+    }
+
+    // Fetch fresh data
+    if (insertCallback) {
+      const newItem = await insertCallback();
+      if (newItem) {
+        await this.cache.put({
+          id: key,
+          lastUpdated: Date.now(),
+          item: newItem
+        });
+        return newItem;
+      }
+    }
+
+    return undefined;
+  }
+}
+```
+
+## Database Indexes
+
+**Player indexes:**
+```typescript
+@index({ inactive: 1, pp: -1 })    // Ranking queries
+@index({ joinedDate: 1 })          // New player queries
+@index({ medals: -1 })             // Medal leaderboard
+```
+
+**Leaderboard indexes:**
+```typescript
+@index({ stars: -1 })              // Difficulty sorting
+@index({ qualified: 1 })           // Status filtering
+@index({ seededScores: 1 })        // Import status
+```
+
+## Connection Management
+
+```typescript
+// Backend: index.ts
+try {
+  Logger.info("Connecting to MongoDB...");
+  await mongoose.connect(env.MONGO_CONNECTION_STRING);
+  Logger.info("Connected to MongoDB :)");
+} catch (error) {
+  Logger.error("Failed to connect to MongoDB:", error);
+  process.exit(1);
+}
+
+Logger.info("Testing Redis connection...");
+export const redisClient = new Redis(env.REDIS_URL);
+Logger.info("Connected to Redis :)");
+```
+
+**Graceful shutdown:**
+
+```typescript
+const gracefulShutdown = async (signal: string) => {
+  // ... other shutdown tasks
+
+  // Close MongoDB connection
+  if (mongoose.connection.readyState === 1) {
+    await mongoose.disconnect();
+    Logger.info("MongoDB connection closed");
+  }
+
+  process.exit(0);
+};
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+```
+
+## Data Flow Summary
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  Client Request                         │
+└────────────────────┬────────────────────────────────────┘
+                     │
+                     ▼
+         ┌───────────────────────┐
+         │  Check Dexie Cache    │
+         │  (Frontend IndexedDB) │
+         └───────┬───────────────┘
+                 │ Cache Miss
+                 ▼
+         ┌───────────────────────┐
+         │   Backend API Call    │
+         └───────┬───────────────┘
+                 │
+                 ▼
+         ┌───────────────────────┐
+         │  Check Redis Cache    │
+         └───────┬───────────────┘
+                 │ Cache Miss
+                 ▼
+         ┌───────────────────────┐
+         │   Query MongoDB       │
+         └───────┬───────────────┘
+                 │ Not Found
+                 ▼
+         ┌───────────────────────┐
+         │  External API Call    │
+         │  (ScoreSaber/etc)     │
+         └───────┬───────────────┘
+                 │
+                 ▼
+         ┌───────────────────────┐
+         │  Store in MongoDB     │
+         │  Cache in Redis       │
+         │  Return to Client     │
+         └───────────────────────┘
+```

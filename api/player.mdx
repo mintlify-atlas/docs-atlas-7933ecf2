@@ -1,0 +1,316 @@
+---
+title: "Player Endpoints"
+description: "API endpoints for retrieving player profiles, statistics, scores, and history"
+---
+
+## Get Player Profile
+
+`GET /player/:playerId`
+
+Fetch a ScoreSaber player profile with optional detail level.
+
+<ParamField path="playerId" type="string" required>
+  The ScoreSaber player ID
+</ParamField>
+
+<ParamField query="type" type="'basic' | 'full'" default="basic">
+  Detail level for the response. Use `basic` for minimal data or `full` for complete profile information
+</ParamField>
+
+<ResponseField name="player" type="object">
+  The player profile data from ScoreSaber
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/player/76561198059961776?type=full
+```
+
+### Example Response
+
+```json
+{
+  "id": "76561198059961776",
+  "name": "Player Name",
+  "profilePicture": "https://...",
+  "country": "US",
+  "pp": 12345.67,
+  "rank": 1000,
+  "countryRank": 100
+}
+```
+
+---
+
+## Get Player Score Chart
+
+`GET /player/scores-chart/:playerId`
+
+Fetch player score chart data for visualization.
+
+<ParamField path="playerId" type="string" required>
+  The ScoreSaber player ID
+</ParamField>
+
+<ResponseField name="scores" type="array">
+  Array of score data points for chart rendering
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/player/scores-chart/76561198059961776
+```
+
+### Example Response
+
+```json
+{
+  "scores": [
+    {"date": "2024-01-01", "pp": 100.5},
+    {"date": "2024-01-02", "pp": 105.2}
+  ]
+}
+```
+
+---
+
+## Get Player PP Values
+
+`GET /player/pps/:playerId`
+
+Fetch player's performance points (PP) breakdown.
+
+<ParamField path="playerId" type="string" required>
+  The ScoreSaber player ID
+</ParamField>
+
+<ResponseField name="pps" type="array">
+  Array of PP values for the player's ranked scores
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/player/pps/76561198059961776
+```
+
+### Example Response
+
+```json
+{
+  "pps": [250.5, 245.3, 240.1, 235.8]
+}
+```
+
+---
+
+## Refresh Player Data
+
+`GET /player/refresh/:playerId`
+
+Refresh player data from ScoreSaber to get the latest information.
+
+<ParamField path="playerId" type="string" required>
+  The ScoreSaber player ID
+</ParamField>
+
+<ResponseField name="player" type="object">
+  The refreshed player profile data
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/player/refresh/76561198059961776
+```
+
+### Example Response
+
+```json
+{
+  "success": true,
+  "player": {
+    "id": "76561198059961776",
+    "name": "Player Name",
+    "pp": 12345.67
+  }
+}
+```
+
+---
+
+## Get Player Mini Rankings
+
+`GET /player/mini-ranking/:playerId`
+
+Fetch player's mini-ranking data.
+
+<ParamField path="playerId" type="string" required>
+  The ScoreSaber player ID
+</ParamField>
+
+<ResponseField name="rankings" type="array">
+  Array of mini-ranking data
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/player/mini-ranking/76561198059961776
+```
+
+### Example Response
+
+```json
+{
+  "rankings": [
+    {"category": "speed", "rank": 500},
+    {"category": "accuracy", "rank": 300}
+  ]
+}
+```
+
+---
+
+## Search Players
+
+`GET /player/search`
+
+Search for players by name or ID.
+
+<ParamField query="query" type="string">
+  Search query string (player name or ID)
+</ParamField>
+
+<ResponseField name="players" type="array">
+  Array of matching player profiles
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/player/search?query=PlayerName
+```
+
+### Example Response
+
+```json
+{
+  "players": [
+    {
+      "id": "76561198059961776",
+      "name": "PlayerName",
+      "profilePicture": "https://...",
+      "country": "US"
+    }
+  ]
+}
+```
+
+---
+
+## Get Player Statistics History
+
+`GET /player/history/:playerId`
+
+Fetch player's statistics history over a date range.
+
+<ParamField path="playerId" type="string" required>
+  The ScoreSaber player ID
+</ParamField>
+
+<ParamField query="startDate" type="string" default="Current date">
+  Start date in ISO format (e.g., `2024-01-01T00:00:00.000Z`)
+</ParamField>
+
+<ParamField query="endDate" type="string" default="50 days ago">
+  End date in ISO format (e.g., `2024-02-20T00:00:00.000Z`)
+</ParamField>
+
+<ResponseField name="history" type="array">
+  Array of historical statistic data points
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://api.scoresaber.com/player/history/76561198059961776?startDate=2024-01-01T00:00:00.000Z&endDate=2024-02-01T00:00:00.000Z"
+```
+
+### Example Response
+
+```json
+{
+  "history": [
+    {
+      "date": "2024-01-01",
+      "rank": 1000,
+      "countryRank": 100,
+      "pp": 12345.67
+    },
+    {
+      "date": "2024-01-02",
+      "rank": 995,
+      "countryRank": 98,
+      "pp": 12350.45
+    }
+  ]
+}
+```
+
+---
+
+## Get Player Score History
+
+`GET /player/score-history/:playerId/:leaderboardId/:page`
+
+Fetch a player's score history for a specific leaderboard.
+
+<ParamField path="playerId" type="string" required>
+  The ScoreSaber player ID
+</ParamField>
+
+<ParamField path="leaderboardId" type="number" required>
+  The leaderboard ID
+</ParamField>
+
+<ParamField path="page" type="number" required>
+  Page number for pagination (starts at 1)
+</ParamField>
+
+<ResponseField name="scores" type="array">
+  Array of historical scores for the leaderboard
+</ResponseField>
+
+<ResponseField name="metadata" type="object">
+  Pagination metadata including total pages and current page
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/player/score-history/76561198059961776/123456/1
+```
+
+### Example Response
+
+```json
+{
+  "scores": [
+    {
+      "scoreId": "1",
+      "score": 987654,
+      "accuracy": 95.5,
+      "pp": 250.5,
+      "timeSet": "2024-01-01T12:00:00.000Z"
+    }
+  ],
+  "metadata": {
+    "total": 1,
+    "page": 1,
+    "itemsPerPage": 12
+  }
+}
+```

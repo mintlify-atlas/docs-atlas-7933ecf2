@@ -1,0 +1,421 @@
+---
+title: Score Tracking
+description: Real-time score tracking, live feeds, and detailed score analytics for Beat Saber gameplay on ScoreSaber Reloaded.
+---
+
+## Overview
+
+ScoreSaber Reloaded provides comprehensive score tracking across all Beat Saber gameplay. Every score submitted to ScoreSaber is tracked, enriched with additional metadata, and made available through powerful filtering and analysis tools.
+
+<CardGroup cols={2}>
+  <Card title="Real-Time Updates" icon="bolt">
+    Live score feeds update instantly as players set new scores worldwide
+  </Card>
+  <Card title="Score History" icon="clock-rotate-left">
+    Complete historical tracking of every score with improvement analysis
+  </Card>
+  <Card title="Advanced Filtering" icon="filter">
+    Sort and filter scores by PP, accuracy, date, difficulty, and more
+  </Card>
+  <Card title="Score Analytics" icon="chart-mixed">
+    Detailed breakdowns including accuracy, misses, pauses, and modifiers
+  </Card>
+</CardGroup>
+
+## Score Display
+
+Every score on ScoreSaber Reloaded shows comprehensive information:
+
+### Primary Score Information
+
+<Accordion title="Core Score Metrics">
+  - **Rank** - Position on the leaderboard (with medal icon for top 10)
+  - **Player Info** - Name, country flag, and avatar
+  - **Score Value** - Raw score with accuracy percentage
+  - **Performance Points (PP)** - PP earned (ranked maps only)
+  - **Time Set** - When the score was submitted
+  - **Leaderboard Link** - Quick navigation to the full leaderboard
+</Accordion>
+
+### Song Information
+
+Each score displays the map details:
+
+- **Song Name** - Full song title
+- **Artist** - Song author
+- **Mapper** - Level author who created the map
+- **Difficulty** - Easy, Normal, Hard, Expert, Expert+
+- **Stars** - Difficulty rating (ranked maps only)
+- **Cover Art** - Song artwork with hover preview
+
+### Score Statistics
+
+<Note>
+  Extended statistics are available for scores tracked through BeatLeader integration.
+</Note>
+
+- **Accuracy Breakdown** - Left hand, right hand, and overall accuracy
+- **Combo** - Max combo achieved
+- **Misses** - Number of missed notes (bad cuts and bombs)
+- **Pauses** - Number of times the player paused
+- **Full Combo** - FC indicator if no misses
+- **Modifiers** - Active modifiers (DA, FS, GN, etc.)
+- **HMD** - Headset used to set the score
+
+## Live Score Feed
+
+The live score feed shows scores as they're submitted in real-time:
+
+### Accessing the Feed
+
+Navigate to `/scores/live` to view the global score feed:
+
+- Automatically updates every few seconds
+- Shows the most recent 50 scores
+- Filterable by ranked/unranked status
+- Click any score to view detailed information
+
+### Feed Features
+
+- **Real-Time Updates** - Scores appear instantly using WebSocket connections
+- **Auto-Scroll** - Optionally auto-scroll to newest scores
+- **Score Notifications** - Visual indicators for milestone scores (new #1, high PP)
+- **Player Filtering** - Follow specific players to see only their scores
+
+<Tip>
+  Use the live feed during tournaments or events to watch top players compete in real-time.
+</Tip>
+
+## Top Scores
+
+View the highest PP scores set globally:
+
+### Accessing Top Scores
+
+Navigate to `/scores/top` to see the leaderboard of best performances:
+
+- Sorted by PP earned (highest first)
+- Pagination through thousands of top scores
+- Filter by date range (today, this week, all time)
+- Quick links to player profiles and leaderboards
+
+### What Qualifies as a Top Score
+
+- Only ranked maps contribute to top scores
+- Scores must be above a minimum PP threshold (~200PP)
+- Recently set scores are prioritized in "Recent Top Scores" view
+- Historical top scores available in "All Time" view
+
+## Score History
+
+Every player's score history is tracked and available:
+
+### Personal Score History
+
+On player profiles, view complete score history:
+
+1. Navigate to any player profile
+2. Scroll to the scores section
+3. Use filtering and sorting options:
+
+<AccordionGroup>
+  <Accordion title="Sort Options">
+    - **Recent** - Newest scores first
+    - **Top PP** - Highest PP scores first (ranked only)
+    - **Stars** - Highest difficulty first
+    - **Accuracy** - Best accuracy first
+    - **Score** - Highest raw score first
+  </Accordion>
+
+  <Accordion title="Filter Options">
+    - **Search** - Find scores by song name or artist
+    - **Ranked Status** - Show only ranked or unranked
+    - **Date Range** - Filter by submission date
+    - **Star Range** - Filter by difficulty rating
+    - **Accuracy Range** - Filter by accuracy percentage
+  </Accordion>
+</AccordionGroup>
+
+### Score Improvement Tracking
+
+ScoreSaber Reloaded tracks improvements on specific maps:
+
+- **Previous Scores** - View all attempts on a leaderboard
+- **Improvement Metrics** - See accuracy, PP, and score gains
+- **History Graph** - Visual chart of score progression over time
+- **Best Run Analysis** - Identify your personal best metrics
+
+<Accordion title="Accessing Score History for a Map">
+  1. Navigate to a leaderboard page
+  2. Find your score in the leaderboard
+  3. Click the dropdown arrow to expand score details
+  4. View the "Score History" tab
+  5. See all your previous scores on that map with timestamps and improvement deltas
+</Accordion>
+
+## Score Details Page
+
+Individual scores tracked by BeatLeader have dedicated detail pages:
+
+### Accessing Score Details
+
+Navigate to `/score/{scoreId}` to view:
+
+- Full score replay data visualization
+- Swing speed analysis charts
+- Cut distribution heatmaps
+- Accuracy breakdown by section
+- Hand-specific performance metrics
+
+### Advanced Metrics
+
+<Note>
+  These metrics require BeatLeader replay data integration.
+</Note>
+
+**Hit Tracker Stats:**
+- Before cuts, accuracy cuts, after cuts
+- Left hand vs right hand comparison
+- Perfect cuts, good cuts, bad cuts breakdown
+
+**Swing Analysis:**
+- Average swing speed per hand
+- Speed consistency over time
+- Speed vs accuracy correlation
+
+**Cut Distribution:**
+- Spatial heatmap of cut positions
+- Timing distribution (early/late hits)
+- Angle precision analysis
+
+## Score Comparison
+
+Compare scores between players:
+
+### Friend Comparisons
+
+On player profiles with friends added:
+
+1. View a player's scores
+2. Enable "Compare with Friends" toggle
+3. See side-by-side metrics:
+   - Your score vs their score
+   - Accuracy difference
+   - PP difference
+   - Rank difference on leaderboard
+
+### Leaderboard Comparisons
+
+On individual leaderboards:
+
+- View your score alongside others
+- See the score difference to rank above
+- Compare accuracy and PP with top scores
+- Filter by friends or country
+
+<Tip>
+  Use score comparison to identify which specific aspects of a map need improvement - misses, accuracy, or pauses.
+</Tip>
+
+## Score Filtering & Sorting
+
+Powerful tools to find exactly the scores you need:
+
+### Score Query System
+
+The API supports complex score queries:
+
+```http
+GET /scores/player/{mode}/{playerId}/{field}/{direction}/{page}
+```
+
+**Query Parameters:**
+- `search` - Text search in song/artist name
+- `minStars` / `maxStars` - Star difficulty range
+- `minAccuracy` / `maxAccuracy` - Accuracy percentage range  
+- `startDate` / `endDate` - Date range filter
+- `comparisonPlayerId` - Enable comparison with another player
+
+### Sort Fields
+
+Scores can be sorted by:
+
+- `pp` - Performance Points (desc)
+- `date` - Time set (desc for recent first)
+- `accuracy` - Accuracy percentage (desc)
+- `score` - Raw score value (desc)
+- `stars` - Difficulty rating (desc)
+- `misses` - Miss count (asc to show clean scores)
+
+## Medal Scores
+
+Special tracking for competitive leaderboard positions:
+
+### Medal System
+
+ScoreSaber Reloaded awards medals for top 10 leaderboard positions:
+
+<CardGroup cols={2}>
+  <Card title="#1 Position" icon="trophy">
+    10 medals - First place
+  </Card>
+  <Card title="#2 Position" icon="medal">
+    8 medals - Second place
+  </Card>
+  <Card title="#3 Position" icon="medal">
+    6 medals - Third place  
+  </Card>
+  <Card title="#4-10 Positions" icon="medal">
+    5 to 1 medals - Top 10
+  </Card>
+</CardGroup>
+
+### Medal Tracking
+
+View medal statistics on player profiles:
+
+- Total medals earned
+- Medal ranking (global and country)
+- Medal score filtering
+- Medal history and tracking
+
+<Note>
+  Medals are recalculated when scores are set or leaderboard positions change. You can lose medals if another player beats your score.
+</Note>
+
+## Score Actions
+
+Interactive actions available for each score:
+
+### One-Click Map Install
+
+- Install the map directly to Beat Saber
+- Requires BeatSaver integration
+- Works with mod tools like ModAssistant
+
+### Copy BSR Code
+
+- Quick copy of the BeatSaver map code
+- Paste in-game using SongBrowser mod
+- Format: `!bsr <code>`
+
+### Download Replay
+
+- Download score replay files
+- View in replay mods or external tools
+- Available for BeatLeader-tracked scores
+
+### View on BeatSaver
+
+- Open the map page on BeatSaver
+- See ratings, reviews, and additional versions
+- Preview the map before playing
+
+## Score Modifiers
+
+Scores display active modifiers with impact indicators:
+
+### Positive Modifiers (Increase PP)
+
+- **DA** - Disappearing Arrows
+- **GN** - Ghost Notes  
+- **FS** - Faster Song
+- **SF** - Slower Song (slight bonus)
+
+### Negative Modifiers (Decrease or No PP)
+
+- **NF** - No Fail (0.5x multiplier)
+- **NO** - No Obstacles (0x - no PP)
+- **NB** - No Bombs (0x - no PP)
+- **SS** - Slower Song (0x - no PP)
+- **NA** - No Arrows (0x - no PP)
+
+<Tip>
+  Practice with NF (No Fail) modifier to learn difficult maps, then retry without it for full PP.
+</Tip>
+
+## API Integration
+
+Access score data programmatically:
+
+### Get Individual Score
+
+```http
+GET /scores/{scoreId}
+```
+
+Returns complete score information including player, leaderboard, and statistics.
+
+### Get Player Scores
+
+```http
+GET /scores/player/scoresaber/{playerId}/{sort}/{page}
+```
+
+**Sort Options:** `recent`, `top`, `pp`
+
+### Get Leaderboard Scores  
+
+```http
+GET /scores/leaderboard/{leaderboardId}/{page}?country={countryCode}
+```
+
+**Optional Filters:**
+- `country` - Filter by country code (ISO 3166-1 alpha-2)
+
+### Get Top Scores
+
+```http
+GET /scores/top/{page}
+```
+
+Returns paginated list of highest PP scores globally.
+
+### Get Score History Graph
+
+```http  
+GET /scores/history-graph/{playerId}/{leaderboardId}
+```
+
+Returns time series data of all scores on a specific leaderboard for visualization.
+
+## Score Webhooks
+
+For developers building integrations, score webhooks provide real-time notifications:
+
+<Note>
+  Webhook functionality is available through third-party Discord bots and integrations. Contact the development team for integration assistance.
+</Note>
+
+### Use Cases
+
+- Discord notifications when you or friends set new scores
+- Automated tournament score tracking
+- Leaderboard monitoring for specific maps
+- Personal best notifications
+- Milestone achievements (10,000 PP, rank #100, etc.)
+
+## Tips for Score Analysis
+
+<AccordionGroup>
+  <Accordion title="Identify Improvement Opportunities">
+    - Sort your scores by PP (descending) to see your most valuable scores
+    - Look for low-accuracy scores in your top 20 - these are prime targets for replay
+    - Use the Scores Graph chart to visually identify outliers
+    - Filter by star range to focus on your skill level
+  </Accordion>
+
+  <Accordion title="Track Consistency">
+    - Review your recent scores' average accuracy
+    - Check miss counts to identify consistency issues
+    - Compare pause counts - frequent pauses may indicate fatigue or difficulty spikes
+    - Monitor your play frequency in the Scores Chart
+  </Accordion>
+
+  <Accordion title="Competitive Analysis">
+    - Compare your scores with similarly-ranked players
+    - Identify maps where you're underperforming relative to your rank
+    - Use snipe playlists to target specific improvement areas
+    - Track medal counts to gauge competitive positioning
+  </Accordion>
+</AccordionGroup>

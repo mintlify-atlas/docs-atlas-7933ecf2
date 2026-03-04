@@ -1,0 +1,149 @@
+---
+title: "BeatSaver Endpoints"
+description: "API endpoints for retrieving BeatSaver map information and metadata"
+---
+
+## Get BeatSaver Map
+
+`GET /beatsaver/map/:hash/:difficulty/:characteristic`
+
+Fetch detailed map information from BeatSaver by hash, difficulty, and characteristic.
+
+<ParamField path="hash" type="string" required>
+  The map hash (e.g., `abc123def456`)
+</ParamField>
+
+<ParamField path="difficulty" type="'Easy' | 'Normal' | 'Hard' | 'Expert' | 'ExpertPlus'" required>
+  The difficulty level
+</ParamField>
+
+<ParamField path="characteristic" type="'Standard' | 'OneSaber' | 'NoArrows' | 'Lawless' | '90Degree' | '360Degree' | 'Lightshow'" required>
+  The map characteristic (game mode)
+</ParamField>
+
+<ParamField query="type" type="'basic' | 'full'" required>
+  Detail level for the response. Use `basic` for minimal data or `full` for complete map information
+</ParamField>
+
+<ResponseField name="map" type="object">
+  Complete BeatSaver map information including metadata, uploader, stats, and versions
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://api.scoresaber.com/beatsaver/map/abc123def456/ExpertPlus/Standard?type=full"
+```
+
+### Example Response (Full)
+
+```json
+{
+  "id": "1a2b3",
+  "hash": "abc123def456",
+  "name": "Reality Check Through The Skull",
+  "description": "Epic map description here",
+  "uploader": {
+    "id": 12345,
+    "name": "Nuketime",
+    "avatar": "https://...",
+    "type": "SIMPLE"
+  },
+  "metadata": {
+    "bpm": 180.0,
+    "duration": 240,
+    "songName": "Reality Check Through The Skull",
+    "songSubName": "",
+    "songAuthorName": "DM DOKURO",
+    "levelAuthorName": "Nuketime"
+  },
+  "stats": {
+    "plays": 50000,
+    "downloads": 100000,
+    "upvotes": 5000,
+    "downvotes": 50,
+    "score": 0.99,
+    "reviews": 250
+  },
+  "uploaded": "2020-01-01T12:00:00.000Z",
+  "automapper": false,
+  "ranked": true,
+  "qualified": false,
+  "versions": [
+    {
+      "hash": "abc123def456",
+      "state": "Published",
+      "createdAt": "2020-01-01T12:00:00.000Z",
+      "downloadURL": "https://cdn.beatsaver.com/abc123def456.zip",
+      "coverURL": "https://cdn.beatsaver.com/abc123def456.jpg",
+      "previewURL": "https://cdn.beatsaver.com/abc123def456.mp3",
+      "diffs": [
+        {
+          "njs": 20.0,
+          "offset": 0.0,
+          "notes": 800,
+          "bombs": 50,
+          "obstacles": 20,
+          "nps": 6.67,
+          "length": 120.0,
+          "characteristic": "Standard",
+          "difficulty": "ExpertPlus",
+          "events": 500,
+          "chroma": false,
+          "me": false,
+          "ne": false,
+          "cinema": false,
+          "seconds": 240.0,
+          "paritySummary": {
+            "errors": 0,
+            "warns": 2,
+            "resets": 5
+          },
+          "stars": 9.12
+        }
+      ]
+    }
+  ],
+  "tags": ["tech", "challenge"],
+  "bookmarked": false,
+  "collaborators": []
+}
+```
+
+### Example Response (Basic)
+
+```bash
+curl "https://api.scoresaber.com/beatsaver/map/abc123def456/ExpertPlus/Standard?type=basic"
+```
+
+```json
+{
+  "id": "1a2b3",
+  "hash": "abc123def456",
+  "name": "Reality Check Through The Skull",
+  "metadata": {
+    "songName": "Reality Check Through The Skull",
+    "songAuthorName": "DM DOKURO",
+    "levelAuthorName": "Nuketime",
+    "bpm": 180.0
+  },
+  "stats": {
+    "downloads": 100000,
+    "upvotes": 5000,
+    "downvotes": 50,
+    "score": 0.99
+  },
+  "ranked": true
+}
+```
+
+### Error Response
+
+If the map is not found:
+
+```json
+{
+  "error": "Not Found",
+  "message": "BeatSaver map abc123def456 not found"
+}
+```

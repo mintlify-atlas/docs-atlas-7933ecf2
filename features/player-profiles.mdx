@@ -1,0 +1,312 @@
+---
+title: Player Profiles
+description: Comprehensive player profiles with rankings, statistics, and performance tracking for Beat Saber players on ScoreSaber Reloaded.
+---
+
+## Overview
+
+Player profiles are the heart of ScoreSaber Reloaded, providing a complete view of a player's Beat Saber journey. Each profile aggregates data from ScoreSaber and enriches it with advanced analytics, visual charts, and performance insights.
+
+<CardGroup cols={2}>
+  <Card title="Global Rankings" icon="globe">
+    Track your position on global and country leaderboards with historical ranking charts
+  </Card>
+  <Card title="Performance Stats" icon="chart-line">
+    View detailed accuracy, PP, and score statistics with trend analysis
+  </Card>
+  <Card title="Score History" icon="clock">
+    Access your complete play history with filtering and comparison tools
+  </Card>
+  <Card title="Profile Badges" icon="award">
+    Display your achievements and AccSaber accuracy badges
+  </Card>
+</CardGroup>
+
+## Accessing Player Profiles
+
+Players can be found through several methods:
+
+1. **Search** - Use the player search in the navigation to find players by name
+2. **Direct URL** - Navigate to `/player/{playerId}` with a ScoreSaber player ID
+3. **From Leaderboards** - Click any player name on a song leaderboard
+4. **Friends List** - View profiles from your friends list
+
+## Profile Header
+
+The profile header displays essential player information at a glance:
+
+<Accordion title="Key Information Displayed">
+  - **Player Name** - With Steam profile link (colored by ScoreSaber role)
+  - **Avatar** - Player's profile picture
+  - **Country Flag** - With country rank badge
+  - **Global Rank** - Current world ranking
+  - **Performance Points (PP)** - Total PP accumulated
+  - **HMD** - The VR headset the player uses
+  - **Join Date** - When the player first appeared on ScoreSaber
+  - **Account Status** - Indicators for inactive or banned accounts
+</Accordion>
+
+### Profile Actions
+
+The header includes quick action buttons:
+
+- **Add Friend** - Add the player to your friends list for score comparisons
+- **Claim Profile** - Link your Steam account to claim your profile
+- **Refresh Data** - Manually refresh player data from ScoreSaber
+- **Copy Player ID** - Quick copy for sharing or integrations
+
+## Statistics & Rankings
+
+### Ranked Play Stats
+
+View comprehensive statistics for ranked gameplay:
+
+- **Total Ranked Score** - Cumulative score across all ranked maps
+- **Total Ranked Plays** - Number of ranked scores set
+- **Average Ranked Accuracy** - Mean accuracy across ranked scores
+- **Ranked Score Trends** - Historical performance over time
+
+<Tip>
+  The average ranked accuracy metric helps identify consistency. Top players typically maintain 95%+ accuracy on ranked maps.
+</Tip>
+
+### Mini Rankings Sidebar
+
+The sidebar (desktop only) shows real-time competitive context:
+
+- **Players Above** - See the players ranked immediately above you
+- **Players Below** - View players you're competing with below your rank
+- **PP Gaps** - Understand how much PP separates you from nearby players
+- **Country Rankings** - Your position within your country's leaderboard
+
+## Performance Charts
+
+ScoreSaber Reloaded provides multiple chart views to visualize your progress:
+
+### Ranking Chart
+
+<Note>
+  Available in **Simple** and **Advanced** modes. Toggle in settings to switch between visualization styles.
+</Note>
+
+- **Simple Mode** - Clean global rank progression over time
+- **Advanced Mode** - Dual-axis chart showing global rank and country rank simultaneously
+- **Date Ranges** - View progress over 50, 90, 180, or 365 days
+- **Zoom & Pan** - Interactive chart navigation for detailed analysis
+
+### Accuracy Chart
+
+Track accuracy trends across your play history:
+
+- Average accuracy per day
+- Ranked vs unranked accuracy comparison
+- Trend lines showing improvement or regression
+- Filter by date range for focused analysis
+
+### Scores Chart
+
+Visualize your score submission patterns:
+
+- Daily score count (ranked and total)
+- Play frequency heatmap
+- Score distribution analysis
+- Activity patterns over time
+
+### Scores Graph
+
+A unique scatter plot showing:
+
+- Each score plotted by star difficulty vs PP earned
+- Color coding by accuracy percentage
+- Visual identification of underperforming scores
+- Ideal for finding maps to improve
+
+### PP Calculator
+
+The interactive PP calculator helps you plan improvements:
+
+1. Enter a target PP goal
+2. See how many top scores you need to replace
+3. View accuracy requirements for specific maps
+4. Calculate potential PP gains from score improvements
+
+<Tip>
+  Focus on improving scores in the 4-7 star range for efficient PP gains. These maps balance difficulty with PP rewards.
+</Tip>
+
+## Score Platforms
+
+Switch between different scoring platforms using tabs:
+
+### ScoreSaber
+
+The default platform showing:
+
+- Recent scores with filtering options
+- Sort by date, PP, accuracy, or stars
+- Score comparison with friends
+- Full score history with pagination
+
+### Medal Scores
+
+A specialized view for medal hunting:
+
+- Scores that earned medals (top 10 leaderboard positions)
+- Medal count tracking
+- Medal rankings and statistics
+- Filtered view of your best competitive performances
+
+### AccSaber
+
+Accuracy-focused scoring platform:
+
+- AccSaber rankings and categories
+- Accuracy points (AP) tracking
+- Category-specific leaderboards (True Accuracy, Standard, etc.)
+- Accuracy badges and achievements
+
+<Note>
+  Platform tabs only appear if you have data on that platform. AccSaber requires at least one tracked score.
+</Note>
+
+## Score Filtering & Search
+
+Powerful filtering options help you find specific scores:
+
+- **Search by Song Name** - Filter scores by map name or artist
+- **Sort Options** - Recent, Top PP, Best Accuracy, Highest Stars
+- **Date Filters** - View scores from specific time periods
+- **Difficulty Ranges** - Filter by star rating
+- **Ranked Status** - Show only ranked or unranked scores
+
+## Profile Badges
+
+Players earn and display various badge types:
+
+### ScoreSaber Badges
+
+- **Event Badges** - Participation in ScoreSaber events
+- **Competition Badges** - Tournament and competition achievements
+- **Community Badges** - Special recognition from the community
+- **Role Badges** - Mapper, RT (Ranking Team), supporter status
+
+### AccSaber Badges
+
+Accuracy tier badges based on performance:
+
+- Diamond, Platinum, Gold, Silver, Bronze tiers
+- Displayed for each AccSaber category
+- Automatically updated as accuracy improves
+
+## Snipe Playlists
+
+Create custom playlists to compete with other players:
+
+<Accordion title="How to Create a Snipe Playlist">
+  1. Navigate to another player's profile
+  2. Click the crosshair/target icon in the profile header
+  3. Configure playlist settings:
+     - **Score Type** - Ranked, unranked, or all scores
+     - **Star Range** - Filter by difficulty (ranked maps only)
+     - **Accuracy Range** - Include only specific accuracy ranges
+     - **Sort By** - PP, date, misses, accuracy, score, or combo
+     - **Require Both Scores** - Only include maps where both players have scores
+  4. Click "Download Playlist" to get a .bplist file
+  5. Import into Beat Saber using a mod like PlaylistManager
+</Accordion>
+
+<Tip>
+  Snipe playlists are excellent for competitive improvement. Sort by PP descending to focus on maps where you can gain the most points.
+</Tip>
+
+## API Integration
+
+Developers can access player data programmatically:
+
+### Get Player Profile
+
+```http
+GET /player/{playerId}?type={detail_type}
+```
+
+**Parameters:**
+- `playerId` (string) - ScoreSaber player ID (Steam ID)
+- `type` (optional) - `basic`, `full` - Detail level of response
+
+### Get Player Scores
+
+```http
+GET /scores/player/{mode}/{playerId}/{field}/{direction}/{page}
+```
+
+**Parameters:**
+- `mode` - `ssr` or `medals`
+- `field` - Sort field (pp, date, accuracy, etc.)
+- `direction` - `asc` or `desc`
+- `page` - Page number (1-indexed)
+
+### Get Player Statistics History
+
+```http
+GET /player/history/{playerId}?startDate={date}&endDate={date}
+```
+
+**Parameters:**
+- `playerId` (string) - Player ID
+- `startDate` (ISO 8601) - Start of date range
+- `endDate` (ISO 8601) - End of date range
+
+### Search Players
+
+```http
+GET /player/search?query={search_term}
+```
+
+**Parameters:**
+- `query` (string) - Player name to search
+
+<Note>
+  All API endpoints are available at `https://api.scoresaber.com`. Authentication is not required for read-only operations.
+</Note>
+
+## Tips for Profile Optimization
+
+<AccordionGroup>
+  <Accordion title="Improve Your Rankings">
+    - Focus on improving scores in the 3-6 star range for steady PP gains
+    - Replace low-accuracy top scores to boost your weighted PP
+    - Use the PP Calculator to identify high-value score improvements
+    - Review the Scores Graph to find outlier scores to retry
+  </Accordion>
+
+  <Accordion title="Track Your Progress">
+    - Check your ranking chart weekly to monitor trends
+    - Compare your accuracy chart to identify consistency patterns
+    - Use the 90-day view to see long-term improvements
+    - Set reminders to review your mini rankings for motivation
+  </Accordion>
+
+  <Accordion title="Compete with Friends">
+    - Add friends to enable score comparisons on their profiles
+    - Create snipe playlists to challenge specific players
+    - Filter their scores by PP to see where you can compete
+    - Use the friend leaderboard feature on song pages
+  </Accordion>
+</AccordionGroup>
+
+## Profile Claiming
+
+Link your Steam account to unlock additional features:
+
+1. Navigate to your own profile
+2. Click "Claim Profile" in the header
+3. Follow the Steam authentication flow
+4. Once claimed, you can:
+   - Refresh your profile data on demand
+   - Access personalized statistics
+   - Enable profile customization features (future)
+   - Receive notifications for rank changes
+
+<Note>
+  Profile claiming is permanent and cannot be transferred. Ensure you're logged into the correct Steam account.
+</Note>

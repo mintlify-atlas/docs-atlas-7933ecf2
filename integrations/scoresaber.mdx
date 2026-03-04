@@ -1,0 +1,290 @@
+---
+title: ScoreSaber Integration
+description: Learn how ScoreSaber Reloaded integrates with the official ScoreSaber API to track player data, scores, and leaderboards
+---
+
+## Overview
+
+ScoreSaber Reloaded serves as an enhanced frontend and data aggregation layer for the official ScoreSaber platform. It consumes the ScoreSaber API to provide extended features like historical tracking, advanced statistics, and enhanced player profiles.
+
+## What is ScoreSaber?
+
+ScoreSaber is the official ranked competitive platform for Beat Saber. It provides:
+
+- Global and country-based player rankings
+- Performance Points (PP) system for ranking players
+- Ranked leaderboards for approved maps
+- Player statistics and score history
+- Ranking queue for map qualification
+
+## How SSR Integrates
+
+ScoreSaber Reloaded integrates with ScoreSaber through a custom API service that handles rate limiting, caching, and proxy rotation for optimal performance.
+
+### Rate Limiting
+
+The integration implements sophisticated rate limiting to respect ScoreSaber's API limits:
+
+```typescript
+// 200 requests per minute per proxy
+const FOREGROUND_RATE_LIMIT = 250 * SERVER_PROXIES.length;
+const BACKGROUND_RATE_LIMIT = 150 * SERVER_PROXIES.length;
+
+private static readonly cooldown: Cooldown = new Cooldown(
+  cooldownRequestsPerMinute(FOREGROUND_RATE_LIMIT),
+  FOREGROUND_RATE_LIMIT,
+  cooldownRequestsPerMinute(BACKGROUND_RATE_LIMIT),
+  BACKGROUND_RATE_LIMIT
+);
+```
+
+From: `backend/src/service/scoresaber-api.service.ts:50-65`
+
+### Automatic Proxy Rotation
+
+When rate limits are approached, the service automatically switches between proxy servers:
+
+```typescript
+private static maybeSwitchProxy(remaining: number): void {
+  if (!Number.isFinite(remaining) || remaining > ScoreSaberApiService.proxySwitchThreshold) {
+    return;
+  }
+  
+  const currentIndex = SERVER_PROXIES.indexOf(ScoreSaberApiService.currentProxy);
+  const nextIndex = (currentIndex + 1) % SERVER_PROXIES.length;
+  const nextProxy = SERVER_PROXIES[nextIndex] ?? "";
+  
+  ScoreSaberApiService.currentProxy = nextProxy;
+  Logger.info(
+    `ScoreSaber API rate limit low (remaining=${remaining}); switching proxy`
+  );
+}
+```
+
+From: `backend/src/service/scoresaber-api.service.ts:540-580`
+
+## Data Synchronized
+
+### Player Data
+
+ScoreSaber Reloaded fetches and caches comprehensive player information:
+
+- **Basic Profile**: Name, avatar, country, rank, PP
+- **Statistics**: Total scores, ranked play count, average accuracy
+- **Rankings**: Global rank, country rank, rank history
+- **Badges**: Player badges and achievements
+- **Bio**: Custom player bio with formatting
+
+```typescript
+public static async lookupPlayer(
+  playerId: string,
+  type: DetailType = "full"
+): Promise<ScoreSaberPlayerToken | undefined> {
+  const token = await ScoreSaberApiService.fetch<ScoreSaberPlayerToken>(
+    LOOKUP_PLAYER_ENDPOINT.replace(":id", playerId).replace(":type", type)
+  );
+  return token;
+}
+```
+
+From: `backend/src/service/scoresaber-api.service.ts:168-182`
+
+### Score Data
+
+Player scores are continuously tracked and stored:
+
+- Score value and accuracy
+- Missed notes, bad cuts, bomb hits
+- Modifiers used
+- Performance Points earned
+- Timestamp and leaderboard position
+
+```typescript
+public static async lookupPlayerScores({
+  playerId,
+  sort,
+  limit = 8,
+  page,
+  search,
+  priority = CooldownPriority.NORMAL,
+}: {
+  playerId: string;
+  sort: ScoreSaberScoreSort;
+  limit?: number;
+  page: number;
+  search?: string;
+  priority?: CooldownPriority;
+}): Promise<ScoreSaberPlayerScoresPageToken | undefined>
+```
+
+From: `backend/src/service/scoresaber-api.service.ts:261-296`
+
+### Leaderboard Data
+
+ScoreSaber leaderboards are fetched with filtering options:
+
+- Ranked/qualified/verified status
+- Star difficulty filtering
+- Category filtering
+- Search functionality
+- Leaderboard scores with country filtering
+
+```typescript
+public static async lookupLeaderboards(
+  page: number,
+  options?: {
+    ranked?: boolean;
+    qualified?: boolean;
+    verified?: boolean;
+    category?: number;
+    stars?: StarFilter;
+    sort?: number;
+    priority?: CooldownPriority;
+    search?: string;
+  }
+): Promise<ScoreSaberLeaderboardPageToken | undefined>
+```
+
+From: `backend/src/service/scoresaber-api.service.ts:360-404`
+
+### Ranking Queue
+
+The ranking queue system tracks maps being considered for ranked status:
+
+```typescript
+public static async lookupRankingRequests(): Promise<ScoreSaberRankingRequestsResponse | undefined> {
+  const nextInQueueResponse = await ScoreSaberApiService.fetch<RankingRequestToken[]>(
+    RANKING_REQUESTS_ENDPOINT.replace(":query", "top")
+  );
+  const openRankUnrankResponse = await ScoreSaberApiService.fetch<RankingRequestToken[]>(
+    RANKING_REQUESTS_ENDPOINT.replace(":query", "belowTop")
+  );
+  
+  return {
+    nextInQueue: nextInQueueResponse || [],
+    openRankUnrank: openRankUnrankResponse || [],
+    all: response || [],
+  };
+}
+```
+
+From: `backend/src/service/scoresaber-api.service.ts:469-493`
+
+## Caching Strategy
+
+All ScoreSaber API responses are cached using Redis to minimize API calls:
+
+```typescript
+const data = await CacheService.fetchWithCache<CachedResponse<T> | undefined>(
+  CacheId.ScoreSaberApi,
+  `scoresaber:api-cache:${cacheHash}`,
+  async () => {
+    // Fetch from API
+  }
+);
+```
+
+From: `backend/src/service/scoresaber-api.service.ts:97-134`
+
+Player data specifically is cached for 3 months:
+
+```typescript
+const CACHED_PLAYER_EXPIRY = TimeUnit.toSeconds(TimeUnit.Month, 3);
+
+public static async getCachedPlayer(id: string): Promise<ScoreSaberPlayerToken> {
+  const cacheKey = `scoresaber:cached-player:${id}`;
+  const cachedData = await redisClient.get(cacheKey);
+  
+  if (cachedData) {
+    return parse(cachedData) as ScoreSaberPlayerToken;
+  }
+  
+  const player = await ScoreSaberApiService.lookupPlayer(id);
+  await redisClient.set(cacheKey, stringify(player), "EX", CACHED_PLAYER_EXPIRY);
+  return player;
+}
+```
+
+From: `backend/src/service/scoresaber.service.ts:25-183`
+
+## Enhanced Features
+
+SSR extends ScoreSaber data with additional features:
+
+### Historical Tracking
+
+Player statistics are tracked over time to show rank changes, PP gains, and performance trends.
+
+### Statistic Changes
+
+Daily, weekly, and monthly changes are calculated for tracked players:
+
+```typescript
+const [dailyChanges, weeklyChanges, monthlyChanges] = await Promise.all([
+  getPlayerStatisticChanges(await getStatisticHistory(player, getDaysAgoDate(1)), 1),
+  getPlayerStatisticChanges(await getStatisticHistory(player, getDaysAgoDate(7)), 7),
+  getPlayerStatisticChanges(await getStatisticHistory(player, getDaysAgoDate(30)), 30),
+]);
+```
+
+From: `backend/src/service/scoresaber.service.ts:115-117`
+
+### Player Refresh
+
+Players can manually trigger a profile refresh:
+
+```typescript
+public static async refreshPlayer(id: string): Promise<PlayerRefreshResponse | undefined> {
+  const result = await ScoreSaberApiService.fetch<PlayerRefreshResponse>(
+    REFRESH_PLAYER_ENDPOINT.replace(":id", id)
+  );
+  return result;
+}
+```
+
+From: `backend/src/service/scoresaber-api.service.ts:501-506`
+
+## API Endpoints
+
+The ScoreSaber integration uses the following base endpoints:
+
+- **API Base**: `https://scoresaber.com/api`
+- **Players**: `/players`, `/player/:id/:type`
+- **Scores**: `/player/:id/scores`
+- **Leaderboards**: `/leaderboards`, `/leaderboard/by-id/:id/info`
+- **Ranking Queue**: `/ranking/requests/:query`
+
+From: `backend/src/service/scoresaber-api.service.ts:23-48`
+
+## Rate Limit Monitoring
+
+The service monitors the `x-ratelimit-remaining` header to proactively manage rate limits:
+
+```typescript
+const remainingHeader = response?.headers.get("x-ratelimit-remaining");
+if (remainingHeader !== null) {
+  const remaining = Number(remainingHeader);
+  if (Number.isFinite(remaining)) {
+    ScoreSaberApiService.lastRateLimitSeen = remaining;
+    ScoreSaberApiService.maybeSwitchProxy(remaining);
+  }
+}
+```
+
+From: `backend/src/service/scoresaber-api.service.ts:112-119`
+
+## Best Practices
+
+<Warning>
+Always use the provided ScoreSaberApiService instead of making direct API calls to ensure proper rate limiting and caching.
+</Warning>
+
+<Tip>
+Use priority parameters for critical requests to ensure they're processed even under high load.
+</Tip>
+
+## Related Documentation
+
+- [Player Profiles](/features/player-profiles)
+- [Score Tracking](/features/score-tracking)
+- [Leaderboards](/features/leaderboards)

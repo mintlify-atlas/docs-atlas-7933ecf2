@@ -1,0 +1,387 @@
+---
+title: BeatSaver Integration
+description: Learn how ScoreSaber Reloaded integrates with BeatSaver to fetch map metadata, song art, and difficulty information
+---
+
+## Overview
+
+BeatSaver is the primary repository for custom Beat Saber maps. ScoreSaber Reloaded integrates with BeatSaver to enrich leaderboard and score data with map metadata, song information, and mapper details.
+
+## What is BeatSaver?
+
+BeatSaver provides:
+
+- Custom map hosting and distribution
+- Map metadata (song name, artist, mapper)
+- Difficulty information for each characteristic
+- Song cover art
+- Mapper profiles and statistics
+- Map version history
+- Download statistics
+
+## How SSR Integrates
+
+### API Service
+
+SSR implements a rate-limited BeatSaver API service:
+
+```typescript
+export class BeatSaverService extends ApiService {
+  constructor() {
+    // 10 requests per second
+    super(new Cooldown(1000 / 10, 10), ApiServiceName.BEAT_SAVER, {
+      useProxy: true,
+      proxySwitchThreshold: 10,
+      proxyResetThreshold: 100,
+    });
+  }
+}
+```
+
+From: `common/src/api-service/impl/beatsaver.ts:12-20`
+
+### API Endpoints
+
+The service uses BeatSaver's public API:
+
+```typescript
+const API_BASE = "https://api.beatsaver.com";
+const LOOKUP_MAP_BY_HASH_ENDPOINT = `${API_BASE}/maps/hash/:query`;
+const LOOKUP_LATEST_MAPS_ENDPOINT = `${API_BASE}/maps/latest`;
+```
+
+From: `common/src/api-service/impl/beatsaver.ts:8-10`
+
+## Data Synchronized
+
+### Map Metadata
+
+For each map, SSR fetches and caches:
+
+- **Basic Info**: Map name, BSR key, hash
+- **Song Details**: Song name, artist, BPM, duration
+- **Mapper Info**: Mapper name, avatar, ID
+- **Description**: Full map description
+- **Song Art**: Cover image URL
+- **Versions**: All versions with different difficulties
+
+```typescript
+const response = {
+  hash,
+  bsr: map.id,
+  name: map.name,
+  author: {
+    avatar: map.uploader?.avatar ?? undefined,
+    name: map.uploader?.name ?? undefined,
+    id: map.uploader?.id ?? undefined,
+  },
+  description: map.description,
+  metadata: map.metadata,
+  songArt: `https://eu.cdn.beatsaver.com/${hash.toLowerCase()}.jpg`,
+} as BeatSaverMapResponse;
+```
+
+From: `backend/src/service/beatsaver.service.ts:39-58`
+
+### Difficulty Information
+
+SSR extracts specific difficulty data for each map characteristic:
+
+```typescript
+difficulty: getBeatSaverDifficulty(map, hash, difficulty, characteristic),
+difficultyLabels: map.versions.reduce(
+  (acc, version) => {
+    version.diffs.forEach(diff => {
+      acc[diff.difficulty] = diff.label;
+    });
+    return acc;
+  },
+  {} as Record<MapDifficulty, string>
+),
+```
+
+From: `backend/src/service/beatsaver.service.ts:59-68`
+
+## Map Lookup
+
+### Single Map Lookup
+
+Lookup a single map by its hash:
+
+```typescript
+async lookupMap(hash: string): Promise<BeatSaverMapToken | undefined> {
+  const before = performance.now();
+  this.log(`Looking up map "${hash}"...`);
+  
+  const response = await this.fetch<BeatSaverMapToken>(
+    LOOKUP_MAP_BY_HASH_ENDPOINT.replace(":query", hash)
+  );
+  
+  if (response == undefined) {
+    return undefined;
+  }
+  
+  this.log(`Found map "${response.id}" in ${(performance.now() - before).toFixed(0)}ms`);
+  return response;
+}
+```
+
+From: `common/src/api-service/impl/beatsaver.ts:28-40`
+
+### Batch Lookup
+
+Lookup multiple maps at once (up to 50):
+
+```typescript
+async lookupMaps(hashes: string[]): Promise<BeatSaverMultiMapLookup | undefined> {
+  if (hashes.length > 50) {
+    throw new Error(`Cannot lookup more than 50 maps at once`);
+  }
+  
+  const response = await this.fetch<BeatSaverMultiMapLookup>(
+    LOOKUP_MAP_BY_HASH_ENDPOINT.replace(":query", hashes.join(","))
+  );
+  
+  if (response == undefined) {
+    return undefined;
+  }
+  
+  this.log(`Found ${Object.entries(response).length} maps`);
+  return response;
+}
+```
+
+From: `common/src/api-service/impl/beatsaver.ts:48-66`
+
+### Latest Maps
+
+Fetch the latest maps with filtering options:
+
+```typescript
+async lookupLatestMaps(
+  automapper: boolean,
+  pageSize: number,
+  options?: {
+    sort?: "FIRST_PUBLISHED" | "UPDATED" | "LAST_PUBLISHED" | "CREATED" | "CURATED";
+    before?: Date;
+    after?: Date;
+  }
+): Promise<BeatSaverLatestMapsToken | undefined> {
+  const response = await this.fetch<BeatSaverLatestMapsToken>(LOOKUP_LATEST_MAPS_ENDPOINT, {
+    searchParams: {
+      ...(pageSize ? { pageSize: pageSize } : {}),
+      ...(automapper ? { automapper: automapper } : {}),
+      ...(options?.sort ? { sort: options.sort } : {}),
+      ...(options?.before ? { before: formatDateForAPI(options.before) } : {}),
+      ...(options?.after ? { after: formatDateForAPI(options.after) } : {}),
+    },
+  });
+  
+  return response;
+}
+```
+
+From: `common/src/api-service/impl/beatsaver.ts:76-109`
+
+## Database Storage
+
+Maps are stored in MongoDB for long-term caching:
+
+```typescript
+public static async saveMap(map: BeatSaverMapToken): Promise<BeatSaverMapToken> {
+  map.versions.forEach(version => {
+    version.hash = version.hash.toLowerCase(); // Ensure the hash is lowercase
+  });
+  
+  const newMap = await BeatSaverMapModel.findOneAndUpdate(
+    { _id: map.id },
+    { $set: map },
+    { upsert: true, new: true }
+  ).lean();
+  
+  newMap.id = (newMap as BeatSaverMapToken & { _id?: string })._id ?? newMap.id;
+  return newMap;
+}
+```
+
+From: `backend/src/service/beatsaver.service.ts:104-118`
+
+## API Controller
+
+SSR exposes a BeatSaver proxy endpoint:
+
+```typescript
+app.get(
+  "/beatsaver/map/:hash/:difficulty/:characteristic",
+  async ({ params: { hash, difficulty, characteristic }, query: { type } }) => {
+    const map = await BeatSaverService.getMap(hash, difficulty, characteristic, type);
+    if (!map) {
+      throw new NotFoundError(`BeatSaver map ${hash} not found`);
+    }
+    return map;
+  },
+  {
+    tags: ["BeatSaver"],
+    params: z.object({
+      hash: z.string(),
+      difficulty: MapDifficultySchema,
+      characteristic: MapCharacteristicSchema,
+    }),
+    query: z.object({
+      type: DetailTypeSchema,
+    }),
+    detail: {
+      description: "Fetch BeatSaver map details",
+    },
+  }
+)
+```
+
+From: `backend/src/controller/beatsaver.controller.ts:11-35`
+
+**Endpoint:**
+```
+GET /beatsaver/map/:hash/:difficulty/:characteristic?type={basic|full}
+```
+
+**Parameters:**
+- `hash` (string): Map hash
+- `difficulty` (MapDifficulty): Difficulty level
+- `characteristic` (MapCharacteristic): Map characteristic (Standard, OneSaber, etc.)
+- `type` (query): Detail level - "basic" or "full"
+
+## Caching Strategy
+
+### Two-Tier Caching
+
+SSR implements a two-tier caching system:
+
+1. **Redis Cache**: Short-term cache for API responses
+2. **MongoDB Storage**: Long-term storage for map data
+
+```typescript
+public static async getMapToken(hash: string): Promise<BeatSaverMapToken | undefined> {
+  const normalizedHash = hash.toLowerCase();
+  
+  // Check MongoDB first
+  const map = await BeatSaverMapModel.findOne({
+    "versions.hash": normalizedHash,
+  }).lean();
+  
+  if (map != null) {
+    map.id = (map as BeatSaverMapToken & { _id?: string })._id ?? map.id;
+    return map;
+  }
+  
+  // Fall back to API
+  const token = await ApiServiceRegistry.getInstance()
+    .getBeatSaverService()
+    .lookupMap(normalizedHash);
+  
+  if (!token) {
+    return undefined;
+  }
+  
+  return this.saveMap(token);
+}
+```
+
+From: `backend/src/service/beatsaver.service.ts:79-96`
+
+### Cache Key
+
+Maps are cached using Redis with the following key format:
+
+```typescript
+CacheService.fetchWithCache(
+  CacheId.BeatSaver, 
+  `beatsaver:${hash}`, 
+  async () => {
+    return await this.getMapToken(hash);
+  }
+);
+```
+
+From: `backend/src/service/beatsaver.service.ts:31-33`
+
+## Discord Logging
+
+BeatSaver-related events are logged to a dedicated Discord channel:
+
+```typescript
+export const DiscordChannels = {
+  BEATSAVER_LOGS: env.DISCORD_CHANNEL_BEATSAVER_LOGS,
+  // ... other channels
+};
+```
+
+From: `backend/src/bot/bot.ts:32`
+
+## Hash Normalization
+
+<Note>
+All map hashes are normalized to lowercase before storage and lookup to ensure consistency.
+</Note>
+
+```typescript
+map.versions.forEach(version => {
+  version.hash = version.hash.toLowerCase();
+});
+```
+
+From: `backend/src/service/beatsaver.service.ts:105-107`
+
+## Rate Limiting
+
+BeatSaver has a rate limit of 10 requests per second. SSR's service automatically handles this:
+
+```typescript
+// 10 requests per second
+super(new Cooldown(1000 / 10, 10), ApiServiceName.BEAT_SAVER, {
+  useProxy: true,
+  proxySwitchThreshold: 10,
+  proxyResetThreshold: 100,
+});
+```
+
+From: `common/src/api-service/impl/beatsaver.ts:14-18`
+
+## Use Cases
+
+### Enriching Leaderboards
+
+When displaying leaderboards, SSR fetches BeatSaver data to show:
+- Song name and artist
+- Map cover art
+- Mapper name
+- Map description
+
+### Playlist Generation
+
+BeatSaver data is used when generating playlists to include:
+- Correct song metadata
+- Cover images
+- Difficulty labels
+
+### Search Functionality
+
+BeatSaver integration enables search by:
+- Song name
+- Mapper name
+- BSR key
+
+## Best Practices
+
+<Tip>
+Always check the database cache before making API requests to BeatSaver to minimize API calls.
+</Tip>
+
+<Warning>
+Batch lookups are limited to 50 maps. Split larger requests into multiple batches.
+</Warning>
+
+## Related Documentation
+
+- [Leaderboards](/features/leaderboards)
+- [Playlists](/features/playlists)
+- [Score Tracking](/features/score-tracking)

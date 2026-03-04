@@ -1,0 +1,176 @@
+---
+title: "Playlist Endpoints"
+description: "API endpoints for generating and retrieving Beat Saber playlists"
+---
+
+## Get Playlist
+
+`GET /playlist/:playlistId`
+
+Fetch a playlist in Beat Saber format.
+
+<ParamField path="playlistId" type="string" required>
+  The playlist ID (with optional file extension like `.bplist` or `.json`)
+</ParamField>
+
+<ResponseField name="playlist" type="object">
+  Beat Saber playlist object with songs and metadata
+</ResponseField>
+
+### Example Request
+
+```bash
+curl https://api.scoresaber.com/playlist/my-playlist.bplist
+```
+
+### Example Response
+
+```json
+{
+  "playlistTitle": "My Playlist",
+  "playlistAuthor": "SSR",
+  "playlistDescription": "Custom playlist description",
+  "image": "data:image/png;base64,...",
+  "songs": [
+    {
+      "hash": "abc123def456",
+      "songName": "Song Name",
+      "difficulties": [
+        {
+          "characteristic": "Standard",
+          "name": "ExpertPlus"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Create Custom Ranked Playlist
+
+`GET /playlist/scoresaber-custom-ranked-maps`
+
+Generate a custom playlist of ranked maps based on configuration criteria.
+
+<ParamField query="config" type="string" required>
+  JSON-encoded configuration string specifying playlist criteria (star range, count, sort order, etc.)
+</ParamField>
+
+<ResponseField name="playlist" type="object">
+  Generated Beat Saber playlist with ranked maps matching the criteria
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://api.scoresaber.com/playlist/scoresaber-custom-ranked-maps?config=%7B%22minStars%22%3A8%2C%22maxStars%22%3A10%2C%22count%22%3A50%7D"
+```
+
+### Config Schema
+
+The `config` parameter should be a URL-encoded JSON string with the following structure:
+
+```json
+{
+  "minStars": 8,
+  "maxStars": 10,
+  "count": 50,
+  "sort": "stars_desc"
+}
+```
+
+### Example Response
+
+```json
+{
+  "playlistTitle": "Custom Ranked Maps (8-10 stars)",
+  "playlistAuthor": "ScoreSaber Reloaded",
+  "playlistDescription": "50 ranked maps between 8 and 10 stars",
+  "image": "data:image/png;base64,...",
+  "songs": [
+    {
+      "hash": "abc123def456",
+      "songName": "Reality Check Through The Skull",
+      "difficulties": [
+        {
+          "characteristic": "Standard",
+          "name": "ExpertPlus"
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## Create Snipe Playlist
+
+`GET /playlist/snipe`
+
+Generate a playlist of maps where you can improve your score or rank compared to another player.
+
+<ParamField query="user" type="string" required>
+  Your ScoreSaber player ID
+</ParamField>
+
+<ParamField query="toSnipe" type="string" required>
+  The player ID you want to compete against
+</ParamField>
+
+<ParamField query="settings" type="string">
+  JSON-encoded settings for filtering and customizing the snipe playlist
+</ParamField>
+
+<ResponseField name="playlist" type="object">
+  Beat Saber playlist with maps optimized for score competition
+</ResponseField>
+
+### Example Request
+
+```bash
+curl "https://api.scoresaber.com/playlist/snipe?user=76561198059961776&toSnipe=76561198012345678"
+```
+
+### Settings Schema
+
+The optional `settings` parameter can be a URL-encoded JSON string:
+
+```json
+{
+  "maxMaps": 100,
+  "minPpDifference": 10,
+  "rankedOnly": true
+}
+```
+
+### Example Response
+
+```json
+{
+  "playlistTitle": "Snipe Playlist: You vs TargetPlayer",
+  "playlistAuthor": "ScoreSaber Reloaded",
+  "playlistDescription": "Maps where you can improve against TargetPlayer",
+  "image": "data:image/png;base64,...",
+  "songs": [
+    {
+      "hash": "abc123def456",
+      "songName": "Song To Beat",
+      "difficulties": [
+        {
+          "characteristic": "Standard",
+          "name": "ExpertPlus"
+        }
+      ],
+      "levelAuthorName": "Mapper Name"
+    }
+  ],
+  "customData": {
+    "yourScore": 950000,
+    "theirScore": 987654,
+    "ppDifference": 15.5
+  }
+}
+```

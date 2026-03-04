@@ -1,0 +1,171 @@
+---
+title: 'Authentication'
+description: 'Authentication methods and request headers for the ScoreSaber Reloaded API'
+---
+
+## Overview
+
+The ScoreSaber Reloaded API is designed to be publicly accessible without authentication for most endpoints. This allows developers to easily integrate player profiles, scores, and leaderboard data into their applications.
+
+## Public Endpoints
+
+Most API endpoints are public and do not require authentication:
+
+- Player profiles and statistics
+- Leaderboard data and scores
+- Score lookups and history
+- BeatSaver map information
+- Playlist data
+
+### Example Public Request
+
+```bash
+curl https://ssr-api.fascinated.cc/player/76561198449412074
+```
+
+```bash
+curl https://ssr-api.fascinated.cc/leaderboard/search?page=1&ranked=true
+```
+
+```bash
+curl https://ssr-api.fascinated.cc/scores/player/scoresaber/76561198449412074/recent/1
+```
+
+## Protected Endpoints
+
+Some administrative endpoints require authentication using Bearer tokens.
+
+### Metrics Endpoint
+
+The `/metrics` endpoint exposes Prometheus metrics and requires authentication in production:
+
+<ParamField header="Authorization" type="string" required>
+  Bearer token for authentication. Format: `Bearer <token>`
+</ParamField>
+
+#### Example Request
+
+```bash
+curl -H "Authorization: Bearer YOUR_TOKEN_HERE" \
+  https://ssr-api.fascinated.cc/metrics
+```
+
+#### Response
+
+Returns Prometheus metrics in text format:
+
+```
+# HELP process_cpu_user_seconds_total Total user CPU time spent in seconds.
+# TYPE process_cpu_user_seconds_total counter
+process_cpu_user_seconds_total 0.123
+...
+```
+
+<ResponseField name="content-type" type="string">
+  `text/plain; version=0.0.4; charset=utf-8`
+</ResponseField>
+
+#### Authentication Error
+
+If the token is invalid or missing:
+
+```json
+{
+  "statusCode": 401,
+  "message": "Unauthorized",
+  "timestamp": "2026-03-04T12:34:56.789Z"
+}
+```
+
+## Request Headers
+
+While authentication is not required for most endpoints, you can use these headers to customize API behavior:
+
+### Accept Header
+
+<ParamField header="Accept" type="string" default="application/json">
+  Specify the response format. Options:
+  - `application/json` - Standard JSON responses (default)
+  - `application/devalue` - Optimized serialization format
+</ParamField>
+
+#### Example with Devalue Format
+
+```bash
+curl -H "Accept: application/devalue" \
+  https://ssr-api.fascinated.cc/player/76561198449412074
+```
+
+### CORS Support
+
+The API includes CORS support for browser-based applications. All origins are allowed, making it easy to integrate the API into web applications:
+
+```javascript
+fetch('https://ssr-api.fascinated.cc/player/76561198449412074')
+  .then(response => response.json())
+  .then(data => console.log(data));
+```
+
+## Security Headers
+
+The API uses the Helmet middleware for security:
+
+- DNS prefetch control enabled
+- Content Security Policy disabled for API flexibility
+- HSTS disabled (handled at reverse proxy level)
+
+## Example Requests
+
+### Fetch Player Profile
+
+```bash
+curl https://ssr-api.fascinated.cc/player/76561198449412074
+```
+
+### Search Leaderboards
+
+```bash
+curl "https://ssr-api.fascinated.cc/leaderboard/search?page=1&ranked=true&minStar=10&maxStar=15"
+```
+
+### Get Player Scores with Custom Format
+
+```bash
+curl -H "Accept: application/devalue" \
+  "https://ssr-api.fascinated.cc/scores/player/ssr/76561198449412074/pp/desc/1"
+```
+
+### Search Players
+
+```bash
+curl "https://ssr-api.fascinated.cc/player/search?query=fascinated"
+```
+
+### Get Score Details
+
+```bash
+curl https://ssr-api.fascinated.cc/scores/12345abcdef
+```
+
+### Post Request with Friend IDs
+
+```bash
+curl -X POST https://ssr-api.fascinated.cc/scores/friend/leaderboard/123456/1 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "friendIds": ["76561198449412074", "76561198123456789"]
+  }'
+```
+
+## Best Practices
+
+<Note>
+  - Respect rate limits and implement exponential backoff for retries
+  - Cache responses when appropriate to reduce API load
+  - Use the `/health` endpoint for uptime monitoring
+  - Monitor error responses and handle them gracefully
+</Note>
+
+<Warning>
+  Do not attempt to authenticate with ScoreSaber credentials. The API proxies ScoreSaber data but does not require user authentication.
+</Warning>
